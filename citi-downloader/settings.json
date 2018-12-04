@@ -1,0 +1,13 @@
+{
+  "FullFile": "https://www.citiprogram.org/members/institutionaladministrators/transcriptdownload.asp?ID=7FB4D98C-1312-4D25-A037-3863D5DC26C9&category=0&data=downloadAll",
+  "IncrementalFile": "https://www.citiprogram.org/members/institutionaladministrators/transcriptdownload.asp?ID=7FB4D98C-1312-4D25-A037-3863D5DC26C9&category=0&data=lastdownload",
+  "SavePath": "C:\\Downloads",
+  "OutputFileName": "CITI_DATA_{0}.csv",
+  "FullFileName": "CITI_Download_{0}.csv",
+  "IncrementalFileName": "CITI_Delta_Download_{0}.csv",
+  "SftpServer": "filetrans2.its.iastate.edu",
+  "SftpUserName": "ehsftp",
+  "SftpPassword": "C7atEnakA6",
+  "SftpRemotePath": "/dataxfer/ftpusers/ehsftp/upload/",
+  "SftpUploadFileName": "CITI_DATA_UPLOAD_{0}.CSV"
+}

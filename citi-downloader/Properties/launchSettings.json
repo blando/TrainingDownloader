@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CitiDownloader": {
+      "commandName": "Project",
+      "commandLineArgs": "full upload"
+    }
+  }
+}

@@ -626,9 +626,11 @@ namespace CitiDownloaderTests.services
 
             // Execute
             ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
-            learnerWebServices.InsertHistory(fakeHistory);
+            bool response;
+            learnerWebServices.InsertHistory(fakeHistory, out response);
 
             // Verify
+            Assert.That(response == true);
             Mock.VerifyAll(mockLearnerWebRepository);
             mockLearnerWebRepository.Verify(f => f.GetHistoryRecordByLearnerCourseDate(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.InsertTrainingRecord(It.IsAny<History>()), Times.Once);
@@ -646,9 +648,11 @@ namespace CitiDownloaderTests.services
 
             // Execute
             ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
-            learnerWebServices.InsertHistory(fakeHistory);
+            bool response;
+            learnerWebServices.InsertHistory(fakeHistory, out response);
 
             // Verify
+            Assert.That(response == false);
             Mock.VerifyAll(mockLearnerWebRepository);
             mockLearnerWebRepository.Verify(f => f.GetHistoryRecordByLearnerCourseDate(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.InsertTrainingRecord(It.IsAny<History>()), Times.Never);
@@ -669,7 +673,8 @@ namespace CitiDownloaderTests.services
             ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
 
             // Execute & Verify
-            Assert.Throws<Exception>(delegate { learnerWebServices.InsertHistory(fakeHistory); });
+            bool response;
+            Assert.Throws<Exception>(delegate { learnerWebServices.InsertHistory(fakeHistory, out response); });
 
             // Verify
             mockLearnerWebRepository.Verify(f => f.GetHistoryRecordByLearnerCourseDate(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Once);
@@ -693,7 +698,8 @@ namespace CitiDownloaderTests.services
             ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
 
             // Excecute & Verify
-            Assert.Throws<Exception>(delegate { learnerWebServices.InsertHistory(fakeHistory); });
+            bool response;
+            Assert.Throws<Exception>(delegate { learnerWebServices.InsertHistory(fakeHistory, out response); });
 
             // Verify
             mockLearnerWebRepository.Verify(f => f.GetHistoryRecordByLearnerCourseDate(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Once);

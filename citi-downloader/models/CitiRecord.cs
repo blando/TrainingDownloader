@@ -68,5 +68,11 @@ namespace CitiDownloader.models
 
             return dt1;
         }
+
+        public string ToTableString(string url)
+        {
+            return (string.Format("<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td><td>{6}</td><td>{7}</td><td>{8}</td><td>{9}</td><td>{10}</td><td>{11}</td><td>{12}</td><td><a href='{13}courses/details/{14}'>View</a></td></tr>",
+                        this.CitiId, this.FirstName, this.LastName, this.EmailAddress, this.NetId, this.RegistrationDate, this.CourseName, this.GroupId, this.Group, this.Score, this.CompletionDate, this.ExpirationDate, this.InstitutionalEmailAddress, url, this._courseID));
+        }
     }
 }

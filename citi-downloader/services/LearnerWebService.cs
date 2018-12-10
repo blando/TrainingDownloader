@@ -6,6 +6,7 @@ using CitiDownloader.models;
 using CitiDownloader.models.entities;
 using CitiDownloader.repositories;
 using System.Linq;
+using ISULogger;
 
 namespace CitiDownloader.services
 {
@@ -48,7 +49,7 @@ namespace CitiDownloader.services
                     DateCreated = DateTime.Now,
                     DateUpdated = DateTime.Now
                 });
-                return null;
+                throw new UnknownCourseException(string.Format("Unknown course {0}", citiRecord.GroupId));
             }
             else
             {
@@ -112,22 +113,25 @@ namespace CitiDownloader.services
         public History GetHistoryByCurriculaId(CitiRecord citiRecord)
         {
             IsuImportHistory isuImportHistory = learnerWebRepository.GetImportHistory(citiRecord.CitiId, citiRecord.GroupId, citiRecord.GetCompletionDate());
-            if (isuImportHistory == null || isuImportHistory.CurriculaId == 0)
+            if (isuImportHistory == null || !isuImportHistory.CurriculaId.HasValue)
             {
                 return null;
             }
 
-            History history = learnerWebRepository.GetHistoryRecordByCurriculaId(isuImportHistory.CurriculaId);
+            History history = learnerWebRepository.GetHistoryRecordByCurriculaId(isuImportHistory.CurriculaId.Value);
             return history;
+            
         }
 
-        public void InsertHistory(History history)
+        public void InsertHistory(History history, out bool inserted)
         {
             History historyRecord = learnerWebRepository.GetHistoryRecordByLearnerCourseDate(history.LearnerId, history.CourseId, history.GetStatusDate());
             if (historyRecord == null)
             {
                 learnerWebRepository.InsertTrainingRecord(history);
+                inserted = true;
             }
+            inserted = false;
         }
 
         public IsuImportHistory InsertImportHistory(CitiRecord citiRecord)

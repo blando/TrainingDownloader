@@ -12,7 +12,7 @@ namespace CitiDownloader.services
         bool IsValid(CitiRecord citiRecord);
         string FindUser(CitiRecord citiRecord);
         string FindCourseId(CitiRecord citiRecord);
-        void InsertHistory(History history);
+        void InsertHistory(History history, out bool inserted);
         History CreateHistoryRecord(CitiRecord citiRecord);
         bool IsVerified(CitiRecord citi);
         History GetHistoryByCurriculaId(CitiRecord citiRecord);

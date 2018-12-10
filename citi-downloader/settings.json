@@ -9,5 +9,12 @@
   "SftpUserName": "ehsftp",
   "SftpPassword": "C7atEnakA6",
   "SftpRemotePath": "/dataxfer/ftpusers/ehsftp/upload/",
-  "SftpUploadFileName": "CITI_DATA_UPLOAD_{0}.CSV"
+  "SftpUploadFileName": "CITI_DATA_UPLOAD_{0}.CSV",
+  "AdminUrl": "https://webapp.its.iastate.edu/learn/import/",
+  "AdminMailToAddress": "its-citi-messages@iastate.edu",
+  "AdminMailSubject": "CITI Data Error",
+  "SysAdminMailToAddress": "its-learn-import-admins",
+  "SysAdminMailSubject": "CITI System Errors",
+  "MailSenderAddress": "CITI Alert <provision-alerts@iastate.edu>",
+  "EventLogName":  "CITIDownloader"
 }

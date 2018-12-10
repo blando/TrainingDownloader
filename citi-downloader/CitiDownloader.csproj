@@ -16,15 +16,22 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="2.0.1" />
     <PackageReference Include="Rebex.Sftp" Version="3.0.6874" />
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="Logger">
+      <HintPath>..\..\Logger\Logger\bin\Debug\Logger.dll</HintPath>
+    </Reference>
     <Reference Include="System">
       <HintPath>System</HintPath>
     </Reference>
     <Reference Include="System.Data">
       <HintPath>System.Data</HintPath>
+    </Reference>
+    <Reference Include="System.Diagnostics.EventLog">
+      <HintPath>..\..\Logger\Logger\bin\Debug\System.Diagnostics.EventLog.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml">
       <HintPath>System.Xml</HintPath>

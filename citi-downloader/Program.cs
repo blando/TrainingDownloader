@@ -2,6 +2,7 @@
 using CitiDownloader.repositories;
 using CitiDownloader.services;
 using CitiDownloader.wrappers;
+using ISULogger;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -25,9 +26,14 @@ namespace CitiDownloader
                 .AddSingleton<ICsvWrapper, CsvWrapper>()
                 .AddSingleton<ISftpWrapper, SftpWrapper>()
                 .AddSingleton<ILearnerWebRepository, LearnerWebRepository>()
+                .AddSingleton<IReportingService, ReportingService>()
+                .AddSingleton<ILog, Log>()
+                .AddSingleton<IMailService, MailService>()
+                .AddSingleton<IMailWrapper, MailWrapper>()
                 .AddDbContext<LWEBIAStateContext>()
                 .BuildServiceProvider();
 
+            IMailService mailService = serviceProvider.GetService<IMailService>();
             ITrainingService trainingService = serviceProvider.GetService<ITrainingService>();
 
             List<string> arguments = new List<string>(args);
@@ -50,6 +56,9 @@ namespace CitiDownloader
             {
                 trainingService.InsertHistoryRecords(histories);
             }
+
+            // If we have any errors to report send them
+            mailService.SendMessages();
         }
 
     }

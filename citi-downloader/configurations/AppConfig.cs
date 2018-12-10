@@ -42,6 +42,19 @@ namespace CitiDownloader.wrappers
         }
         private DateTime _dateTime { get; set; }
 
+        public override string AdminUrl => this.configuration["AdminUrl"];
+        public override string AdminMailToAddress => this.configuration["AdminMailToAddress"];
+
+        public override string AdminMailSubject => this.configuration["AdminMailSubject"];
+
+        public override string SysAdminMailToAddress => this.configuration["SysAdminMailToAddress"];
+
+        public override string SysAdminMailSubject => this.configuration["SysAdminMailSubject"];
+
+        public override string MailSenderAddress => this.configuration["MailSenderAddress"];
+
+        public override string EventLogName => this.configuration["EventLogName"];
+
         public AppConfig()
         {
             this.configuration = new ConfigurationBuilder()

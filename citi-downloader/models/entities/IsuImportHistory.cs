@@ -29,6 +29,6 @@ namespace CitiDownloader.models.entities
         public bool? IsValid { get; set; }
         public bool? Inserted { get; set; }
         public byte? Source { get; set; }
-        public int CurriculaId { get; set; }
+        public int? CurriculaId { get; set; }
     }
 }

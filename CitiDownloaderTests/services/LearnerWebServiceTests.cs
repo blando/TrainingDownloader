@@ -19,18 +19,25 @@ namespace CitiDownloaderTests.services
     public class LearnerWebServiceTests
     {
         private Fixture fixture;
+        private Mock<ILearnerWebRepository> mockLearnerWebRepository;
 
         public LearnerWebServiceTests()
         {
             this.fixture = new Fixture();
         }
 
+        private void SetupMocks()
+        {
+            this.mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
+
+        }
+
         [Test]
         public void CreateHistoryRecordSuccessfulTest()
         {
             // Setup
+            SetupMocks();
             CitiRecord testRecord = fixture.Generate<CitiRecord>();
-            Mock<ILearnerWebRepository> mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
 
             // Execute
             ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
@@ -53,12 +60,12 @@ namespace CitiDownloaderTests.services
         public void FindCourseIdReturnCourseIdTest()
         {
             // Setup
+            SetupMocks();
             string fakeGroupId = fixture.Generate<string>();
             string returnCourseId = fixture.Generate<string>();
             CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
             Courses returnCourse = fixture.Generate<Courses>();
             returnCourse.CourseId = returnCourseId;
-            Mock<ILearnerWebRepository> mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
             mockLearnerWebRepository.Setup(f => f.GetCourseByCitiCourseId(It.IsAny<string>())).Returns(returnCourse);
 
             // Execute
@@ -73,23 +80,23 @@ namespace CitiDownloaderTests.services
         }
 
         [Test]
-        public void FindCourseIdNotFoundInsertAndReturnNullTest()
+        public void FindCourseIdNotFoundInsertAndThrowUnknownCourseExceptionTest()
         {
             // Setup
+            SetupMocks();
             string fakeGroupId = fixture.Generate<string>();
             string returnCourseId = fixture.Generate<string>();
             CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
             Courses returnCourse = null;
-            Mock<ILearnerWebRepository> mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
             mockLearnerWebRepository.Setup(f => f.GetCourseByCitiCourseId(It.IsAny<string>())).Returns(returnCourse);
             mockLearnerWebRepository.Setup(f => f.InsertCourse(It.IsAny<IsuCitiLwCourses>())).Verifiable();
 
             // Execute
             ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
-            string response = learnerWebServices.FindCourseId(fakeCitiRecord);
+            ActualValueDelegate<object> testDelegate = () => learnerWebServices.FindCourseId(fakeCitiRecord);
 
             // Verify
-            Assert.That(response == null);
+            Assert.That(testDelegate, Throws.TypeOf<UnknownCourseException>());
             mockLearnerWebRepository.Verify(f => f.GetCourseByCitiCourseId(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.InsertCourse(It.IsAny<IsuCitiLwCourses>()), Times.Once);
             Mock.VerifyAll(mockLearnerWebRepository);
@@ -99,12 +106,12 @@ namespace CitiDownloaderTests.services
         public void FindCourseIdGetCourseThrowsExceptionTest()
         {
             // Setup
+            SetupMocks();
             string fakeGroupId = fixture.Generate<string>();
             string returnCourseId = fixture.Generate<string>();
             CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
             Courses returnCourse = fixture.Generate<Courses>();
             returnCourse.CourseId = returnCourseId;
-            Mock<ILearnerWebRepository> mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
             mockLearnerWebRepository.Setup(f => f.GetCourseByCitiCourseId(It.IsAny<string>())).Throws(new Exception());
 
             // Execute
@@ -122,11 +129,11 @@ namespace CitiDownloaderTests.services
         public void FindCourseIdNotFoundInsertThrowsExceptionTest()
         {
             // Setup
+            SetupMocks();
             string fakeGroupId = fixture.Generate<string>();
             string returnCourseId = fixture.Generate<string>();
             CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
             Courses returnCourse = null;
-            Mock<ILearnerWebRepository> mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
             mockLearnerWebRepository.Setup(f => f.GetCourseByCitiCourseId(It.IsAny<string>())).Returns(returnCourse);
             mockLearnerWebRepository.Setup(f => f.InsertCourse(It.IsAny<IsuCitiLwCourses>())).Throws(new Exception());
 
@@ -144,68 +151,14 @@ namespace CitiDownloaderTests.services
         public void FindUserExistingGetIsuCitiLwLearnerTest()
         {
             // Setup
+            SetupMocks();
             string citiId = fixture.Generate<string>();
             string univId = fixture.Generate<string>();
             CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
             fakeCitiRecord.CitiId = citiId;
-            IsuCitiLwLearners fakeLearners = fixture.Generate<IsuCitiLwLearners>();
-            fakeLearners.LwLearnerId = univId;
-            Mock<ILearnerWebRepository> mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
-            mockLearnerWebRepository.Setup(f => f.GetIsuCitiLwLearner(citiId)).Returns(fakeLearners);
-
-            // Execute
-            ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
-            string response = learnerWebServices.FindUser(fakeCitiRecord);
-
-            // Verify
-            Assert.That(response == univId);
-            mockLearnerWebRepository.Verify(f => f.GetIsuCitiLwLearner(It.IsAny<string>()), Times.Once);
-            mockLearnerWebRepository.Verify(f => f.GetLearnerByCitiId(It.IsAny<string>()), Times.Never);
-            mockLearnerWebRepository.Verify(f => f.GetLearnerByNetId(It.IsAny<string>()), Times.Never);
-            mockLearnerWebRepository.Verify(f => f.GetLearnerByEmail(It.IsAny<string>()), Times.Never);
-            mockLearnerWebRepository.Verify(f => f.UpdateOrInsertISUCitiLwLearner(It.IsAny<IsuCitiLwLearners>()), Times.Never);
-        }
-
-        [Test]
-        public void FindUserGetIsuCitiLwLearnerThrowsExceptionTest()
-        {
-            // Setup
-            string citiId = fixture.Generate<string>();
-            string univId = fixture.Generate<string>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecord.CitiId = citiId;
-            IsuCitiLwLearners fakeLearners = fixture.Generate<IsuCitiLwLearners>();
-            fakeLearners.LwLearnerId = univId;
-            Mock<ILearnerWebRepository> mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
-            mockLearnerWebRepository.Setup(f => f.GetIsuCitiLwLearner(citiId)).Throws(new Exception());
-
-            // Execute
-            ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
-            ActualValueDelegate<object> testDelegate = () => learnerWebServices.FindUser(fakeCitiRecord);
-
-            // Verify
-            Assert.That(testDelegate, Throws.TypeOf<Exception>());
-            mockLearnerWebRepository.Verify(f => f.GetIsuCitiLwLearner(It.IsAny<string>()), Times.Once);
-            mockLearnerWebRepository.Verify(f => f.GetLearnerByCitiId(It.IsAny<string>()), Times.Never);
-            mockLearnerWebRepository.Verify(f => f.GetLearnerByNetId(It.IsAny<string>()), Times.Never);
-            mockLearnerWebRepository.Verify(f => f.GetLearnerByEmail(It.IsAny<string>()), Times.Never);
-            mockLearnerWebRepository.Verify(f => f.UpdateOrInsertISUCitiLwLearner(It.IsAny<IsuCitiLwLearners>()), Times.Never);
-        }
-
-        [Test]
-        public void FindUserExistingGetLearnerByCitiIdTest()
-        {
-            // Setup
-            string citiId = fixture.Generate<string>();
-            string univId = fixture.Generate<string>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecord.CitiId = citiId;
-            IsuCitiLwLearners fakeLearners = null;
-            Learners fakeLearner = fixture.Generate<Learners>();
-            fakeLearner.LearnerId = univId;
-            Mock<ILearnerWebRepository> mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
-            mockLearnerWebRepository.Setup(f => f.GetIsuCitiLwLearner(citiId)).Returns(fakeLearners);
-            mockLearnerWebRepository.Setup(f => f.GetLearnerByCitiId(citiId)).Returns(fakeLearner);
+            Learners fakeLearners = fixture.Generate<Learners>();
+            fakeLearners.LearnerId = univId;
+            mockLearnerWebRepository.Setup(f => f.GetLearnerByCitiId(citiId)).Returns(fakeLearners);
             mockLearnerWebRepository.Setup(f => f.UpdateOrInsertISUCitiLwLearner(It.IsAny<IsuCitiLwLearners>())).Verifiable();
 
             // Execute
@@ -214,13 +167,12 @@ namespace CitiDownloaderTests.services
 
             // Verify
             Assert.That(response == univId);
-            mockLearnerWebRepository.Verify(f => f.GetIsuCitiLwLearner(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByCitiId(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByNetId(It.IsAny<string>()), Times.Never);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByEmail(It.IsAny<string>()), Times.Never);
             mockLearnerWebRepository.Verify(f => f.UpdateOrInsertISUCitiLwLearner(It.IsAny<IsuCitiLwLearners>()), Times.Once);
-            Mock.VerifyAll(mockLearnerWebRepository);
         }
+
 
         [Test]
         public void FindUserExistingGetLearnerByCitiIdThrowsExceptionTest()
@@ -230,12 +182,11 @@ namespace CitiDownloaderTests.services
             string univId = fixture.Generate<string>();
             CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
             fakeCitiRecord.CitiId = citiId;
-            IsuCitiLwLearners fakeLearners = null;
             Learners fakeLearner = fixture.Generate<Learners>();
             fakeLearner.LearnerId = univId;
             Mock<ILearnerWebRepository> mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
-            mockLearnerWebRepository.Setup(f => f.GetIsuCitiLwLearner(citiId)).Returns(fakeLearners);
             mockLearnerWebRepository.Setup(f => f.GetLearnerByCitiId(citiId)).Throws(new Exception());
+            mockLearnerWebRepository.Setup(f => f.UpdateOrInsertISUCitiLwLearner(It.IsAny<IsuCitiLwLearners>())).Verifiable();
 
             // Execute
             ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
@@ -243,7 +194,6 @@ namespace CitiDownloaderTests.services
 
             // Verify
             Assert.That(testDelegate, Throws.TypeOf<Exception>());
-            mockLearnerWebRepository.Verify(f => f.GetIsuCitiLwLearner(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByCitiId(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByNetId(It.IsAny<string>()), Times.Never);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByEmail(It.IsAny<string>()), Times.Never);
@@ -260,25 +210,21 @@ namespace CitiDownloaderTests.services
             string domain = "iastate.edu";
             string univId = fixture.Generate<string>();
 
-                // Mock the first part and return null univId
+            // Mock the first part and return null univId
             CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
             fakeCitiRecord.CitiId = citiId;
             fakeCitiRecord.EmailAddress = string.Format("{0}@{1}", netId, domain);
-            IsuCitiLwLearners fakeIsuCitiLwLearners = new IsuCitiLwLearners();
-            fakeIsuCitiLwLearners.LwLearnerId = null;
-            fakeIsuCitiLwLearners.Valid = true;
-            mockLearnerWebRepository.Setup(f => f.GetIsuCitiLwLearner(citiId)).Returns(fakeIsuCitiLwLearners);
 
-                // Mock the second part and return null univId
+            // Mock the second part and return null univId
             Learners fakeLearner1 = null;
             mockLearnerWebRepository.Setup(f => f.GetLearnerByCitiId(citiId)).Returns(fakeLearner1);
 
-                // Mock the third part and return an actual univId
+            // Mock the third part and return an actual univId
             Learners fakeLearner2 = fixture.Generate<Learners>();
             fakeLearner2.LearnerId = univId;
             mockLearnerWebRepository.Setup(f => f.GetLearnerByNetId(netId)).Returns(fakeLearner2);
 
-                // Mock the call to update the cached record
+            // Mock Updating IsuCitiLWLearner
             mockLearnerWebRepository.Setup(f => f.UpdateOrInsertISUCitiLwLearner(It.IsAny<IsuCitiLwLearners>())).Verifiable();
 
             // Execute
@@ -287,7 +233,6 @@ namespace CitiDownloaderTests.services
 
             // Verify
             Assert.That(response == univId);
-            mockLearnerWebRepository.Verify(f => f.GetIsuCitiLwLearner(It.IsAny<string>()), Times.Exactly(2));
             mockLearnerWebRepository.Verify(f => f.GetLearnerByCitiId(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByNetId(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByEmail(It.IsAny<string>()), Times.Never);
@@ -309,10 +254,6 @@ namespace CitiDownloaderTests.services
             CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
             fakeCitiRecord.CitiId = citiId;
             fakeCitiRecord.EmailAddress = string.Format("{0}@{1}", netId, domain);
-            IsuCitiLwLearners fakeIsuCitiLwLearners = new IsuCitiLwLearners();
-            fakeIsuCitiLwLearners.LwLearnerId = null;
-            fakeIsuCitiLwLearners.Valid = true;
-            mockLearnerWebRepository.Setup(f => f.GetIsuCitiLwLearner(citiId)).Returns(fakeIsuCitiLwLearners);
 
             // Mock the second part and return null univId
             Learners fakeLearner1 = null;
@@ -332,7 +273,6 @@ namespace CitiDownloaderTests.services
 
             // Verify
             Assert.That(testDelegate, Throws.TypeOf<Exception>());
-            mockLearnerWebRepository.Verify(f => f.GetIsuCitiLwLearner(It.IsAny<string>()), Times.Exactly(2));
             mockLearnerWebRepository.Verify(f => f.GetLearnerByCitiId(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByNetId(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByEmail(It.IsAny<string>()), Times.Never);
@@ -353,10 +293,6 @@ namespace CitiDownloaderTests.services
             CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
             fakeCitiRecord.CitiId = citiId;
             fakeCitiRecord.EmailAddress = string.Format("{0}@{1}", netId, domain);
-            IsuCitiLwLearners fakeIsuCitiLwLearners = new IsuCitiLwLearners();
-            fakeIsuCitiLwLearners.LwLearnerId = null;
-            fakeIsuCitiLwLearners.Valid = true;
-            mockLearnerWebRepository.Setup(f => f.GetIsuCitiLwLearner(citiId)).Returns(fakeIsuCitiLwLearners);
 
             // Mock the second part and return null univId
             Learners fakeLearner1 = null;
@@ -378,7 +314,6 @@ namespace CitiDownloaderTests.services
 
             // Verify
             Assert.That(response == univId);
-            mockLearnerWebRepository.Verify(f => f.GetIsuCitiLwLearner(It.IsAny<string>()), Times.Exactly(2));
             mockLearnerWebRepository.Verify(f => f.GetLearnerByCitiId(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByNetId(It.IsAny<string>()), Times.Never);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByEmail(It.IsAny<string>()), Times.Once);
@@ -400,10 +335,6 @@ namespace CitiDownloaderTests.services
             CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
             fakeCitiRecord.CitiId = citiId;
             fakeCitiRecord.EmailAddress = string.Format("{0}@{1}", netId, domain);
-            IsuCitiLwLearners fakeIsuCitiLwLearners = new IsuCitiLwLearners();
-            fakeIsuCitiLwLearners.LwLearnerId = null;
-            fakeIsuCitiLwLearners.Valid = true;
-            mockLearnerWebRepository.Setup(f => f.GetIsuCitiLwLearner(citiId)).Returns(fakeIsuCitiLwLearners);
 
             // Mock the second part and return null univId
             Learners fakeLearner1 = null;
@@ -427,7 +358,7 @@ namespace CitiDownloaderTests.services
 
             // Verify
             Assert.That(response == univId);
-            mockLearnerWebRepository.Verify(f => f.GetIsuCitiLwLearner(It.IsAny<string>()), Times.Exactly(2));
+            mockLearnerWebRepository.Verify(f => f.GetIsuCitiLwLearner(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByCitiId(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByNetId(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByEmail(It.IsAny<string>()), Times.Once);
@@ -449,10 +380,6 @@ namespace CitiDownloaderTests.services
             CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
             fakeCitiRecord.CitiId = citiId;
             fakeCitiRecord.EmailAddress = string.Format("{0}@{1}", netId, domain);
-            IsuCitiLwLearners fakeIsuCitiLwLearners = new IsuCitiLwLearners();
-            fakeIsuCitiLwLearners.LwLearnerId = null;
-            fakeIsuCitiLwLearners.Valid = true;
-            mockLearnerWebRepository.Setup(f => f.GetIsuCitiLwLearner(citiId)).Returns(fakeIsuCitiLwLearners);
 
             // Mock the second part and return null univId
             Learners fakeLearner1 = null;
@@ -472,7 +399,6 @@ namespace CitiDownloaderTests.services
 
             // Verify
             Assert.That(testDelegate, Throws.TypeOf<UnknownUserException>());
-            mockLearnerWebRepository.Verify(f => f.GetIsuCitiLwLearner(It.IsAny<string>()), Times.Exactly(2));
             mockLearnerWebRepository.Verify(f => f.GetLearnerByCitiId(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByNetId(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByEmail(It.IsAny<string>()), Times.Once);
@@ -509,13 +435,64 @@ namespace CitiDownloaderTests.services
 
             // Verify
             Assert.That(testDelegate, Throws.TypeOf<InvalidUserException>());
-            mockLearnerWebRepository.Verify(f => f.GetIsuCitiLwLearner(It.IsAny<string>()), Times.Exactly(2));
+            mockLearnerWebRepository.Verify(f => f.GetIsuCitiLwLearner(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByCitiId(It.IsAny<string>()), Times.Once);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByNetId(It.IsAny<string>()), Times.Never);
             mockLearnerWebRepository.Verify(f => f.GetLearnerByEmail(It.IsAny<string>()), Times.Never);
             mockLearnerWebRepository.Verify(f => f.UpdateOrInsertISUCitiLwLearner(It.IsAny<IsuCitiLwLearners>()), Times.Never);
 
         }
+
+        [Test]
+        public void GetHistoryByCitiIdCourseIdDateTest()
+        {
+            // Setup
+            SetupMocks();
+            CitiRecord citiRecord = fixture.Generate<CitiRecord>();
+            History fakeHistory = fixture.Generate<History>();
+            mockLearnerWebRepository.Setup(f => f.GetHistoryRecordByLearnerCourseDate(citiRecord.UnivId, citiRecord.CourseId, citiRecord.GetCompletionDate())).Returns(fakeHistory);
+
+            IsuImportHistory fakeIsuImportHistory = fixture.Generate<IsuImportHistory>();
+            mockLearnerWebRepository.Setup(f => f.GetImportHistory(citiRecord.CitiId, citiRecord.CitiCourseId, citiRecord.GetCompletionDate())).Returns(fakeIsuImportHistory);
+            mockLearnerWebRepository.Setup(f => f.UpdateImportHistoryWithCurriculaId(fakeIsuImportHistory)).Verifiable();
+
+            // Execute
+            ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
+            History response = learnerWebServices.GetHistoryByCitiIdCourseIdDate(citiRecord);
+
+            // Verify
+            Assert.That(response == fakeHistory);
+            mockLearnerWebRepository.Verify(f => f.GetHistoryRecordByLearnerCourseDate(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Once);
+            mockLearnerWebRepository.Verify(f => f.GetImportHistory(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Once);
+            mockLearnerWebRepository.Verify(f => f.UpdateImportHistoryWithCurriculaId(It.IsAny<IsuImportHistory>()), Times.Once);
+            mockLearnerWebRepository.VerifyNoOtherCalls();
+            Mock.VerifyAll(mockLearnerWebRepository);
+        }
+
+
+        [Test]
+        public void GetHistoryByCitiIdCourseIdDateNullTest()
+        {
+            // Setup
+            SetupMocks();
+            CitiRecord citiRecord = fixture.Generate<CitiRecord>();
+            History fakeHistory = null;
+            mockLearnerWebRepository.Setup(f => f.GetHistoryRecordByLearnerCourseDate(citiRecord.UnivId, citiRecord.CourseId, citiRecord.GetCompletionDate())).Returns(fakeHistory);
+
+            // Execute
+            ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
+            History response = learnerWebServices.GetHistoryByCitiIdCourseIdDate(citiRecord);
+
+            // Verify
+            Assert.That(response == fakeHistory);
+            mockLearnerWebRepository.Verify(f => f.GetHistoryRecordByLearnerCourseDate(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Once);
+            mockLearnerWebRepository.Verify(f => f.GetImportHistory(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Never);
+            mockLearnerWebRepository.Verify(f => f.UpdateImportHistoryWithCurriculaId(It.IsAny<IsuImportHistory>()), Times.Never);
+            mockLearnerWebRepository.VerifyNoOtherCalls();
+            Mock.VerifyAll(mockLearnerWebRepository);
+        }
+
+
 
         [Test]
         public void GetHistoryByCurriculaIdTest()
@@ -570,14 +547,35 @@ namespace CitiDownloaderTests.services
         }
 
         [Test]
-        public void GetHistoryByCurriculaIdZeroValueCurriculaIdTest()
+        public void GetHistoryByCurriculaIdNullValueCurriculaIdTest()
         {
             // Setup
-            int curriculaId = 0;
+            int? curriculaId = null;
 
             CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
             IsuImportHistory returnIsuImportHistory = fixture.Generate<IsuImportHistory>();
             returnIsuImportHistory.CurriculaId = curriculaId;
+
+            Mock<ILearnerWebRepository> mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
+            mockLearnerWebRepository.Setup(f => f.GetImportHistory(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>())).Returns(returnIsuImportHistory);
+
+            // Execute
+            ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
+            History response = learnerWebServices.GetHistoryByCurriculaId(fakeCitiRecord);
+
+            // Verify
+            Assert.That(response == null);
+            mockLearnerWebRepository.Verify(f => f.GetImportHistory(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Once);
+            mockLearnerWebRepository.Verify(f => f.GetHistoryRecordByCurriculaId(It.IsAny<int>()), Times.Never);
+        }
+
+        [Test]
+        public void GetHistoryByCurriculaIdNullIsuImportHistoryTest()
+        {
+            // Setup
+
+            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            IsuImportHistory returnIsuImportHistory = null;
 
             Mock<ILearnerWebRepository> mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
             mockLearnerWebRepository.Setup(f => f.GetImportHistory(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>())).Returns(returnIsuImportHistory);
@@ -710,11 +708,37 @@ namespace CitiDownloaderTests.services
         public void InsertImportHistoryTest()
         {
             // Setup
+            SetupMocks();
             CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
             fakeCitiRecord.StageNumber = fixture.Generate<Byte>();
-
-            Mock<ILearnerWebRepository> mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
-            mockLearnerWebRepository.Setup(f => f.InsertAppTrainingRecordHistory(It.IsAny<IsuImportHistory>())).Verifiable();
+            IsuImportHistory isuImportHistory = new IsuImportHistory()
+            {
+                CitiId = fakeCitiRecord.CitiId,
+                FirstName = fakeCitiRecord.FirstName,
+                LastName = fakeCitiRecord.LastName,
+                EmailAddress = fakeCitiRecord.EmailAddress,
+                RegistrationDate = fakeCitiRecord.RegistrationDate,
+                CourseName = fakeCitiRecord.CourseName,
+                StageNumber = byte.Parse(fakeCitiRecord.StageNumber.ToString()),
+                StageDescription = fakeCitiRecord.StageDescription,
+                CompletionReportNum = fakeCitiRecord.CompletionReportNum,
+                CompletionDate = fakeCitiRecord.GetCompletionDate(),
+                Score = fakeCitiRecord.Score,
+                PassingScore = fakeCitiRecord.PassingScore,
+                ExpirationDate = fakeCitiRecord.ExpirationDate,
+                GroupName = fakeCitiRecord.Group,
+                CitiCourseId = fakeCitiRecord.GroupId,
+                Name = fakeCitiRecord.Name,
+                UserName = fakeCitiRecord.UserName,
+                InstitutionalEmailAddress = fakeCitiRecord.InstitutionalEmailAddress,
+                EmployeeNumber = fakeCitiRecord.EmployeeNumber,
+                Verified = fakeCitiRecord.Verified,
+                IsValid = fakeCitiRecord.IsValid,
+                Inserted = false,
+                Source = 1
+            };
+            
+            mockLearnerWebRepository.Setup(f => f.InsertAppTrainingRecordHistory(It.IsAny<IsuImportHistory>())).Returns(isuImportHistory).Verifiable();
 
             // Execute
             ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
@@ -742,9 +766,9 @@ namespace CitiDownloaderTests.services
             Assert.That(response.EmployeeNumber == fakeCitiRecord.EmployeeNumber);
             Assert.That(response.Verified == fakeCitiRecord.Verified);
             Assert.That(response.IsValid == fakeCitiRecord.IsValid);
-            Assert.That(response.IsValid == fakeCitiRecord.IsValid);
             Assert.That(response.Inserted == false);
             Assert.That(response.Source == 1);
+            Mock.VerifyAll(mockLearnerWebRepository);
             mockLearnerWebRepository.Verify(f => f.InsertAppTrainingRecordHistory(It.IsAny<IsuImportHistory>()), Times.Once);
         }
 
@@ -929,6 +953,28 @@ namespace CitiDownloaderTests.services
         }
 
         [Test]
+        public void IsVerifiedNullTest()
+        {
+            // Setup
+            string citiId = fixture.Generate<string>();
+            bool? expectedResponse = null;
+            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            fakeCitiRecord.CitiId = citiId;
+            IsuImportHistory returnIsuImportHistory = null;
+
+            Mock<ILearnerWebRepository> mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
+            mockLearnerWebRepository.Setup(f => f.GetImportHistory(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>())).Returns(returnIsuImportHistory);
+
+            // Execute
+            ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
+            bool response = learnerWebServices.IsVerified(fakeCitiRecord);
+
+            // Verify
+            Assert.That(response == false);
+            mockLearnerWebRepository.Verify(f => f.GetImportHistory(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Once);
+        }
+
+        [Test]
         public void IsVerifiedTrueValueTest()
         {
             // Setup
@@ -972,6 +1018,47 @@ namespace CitiDownloaderTests.services
             // Verify
             Assert.That(response == false);
             mockLearnerWebRepository.Verify(f => f.GetImportHistory(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Once);
+        }
+
+        [Test]
+        public void SetInsertedForImportRecordTest()
+        {
+            // Setup
+            int fakeId = fixture.Generate<int>();
+            Mock<ILearnerWebRepository> mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
+            mockLearnerWebRepository.Setup(f => f.SetInsertedForImportRecord(fakeId)).Verifiable();
+
+            // Execute
+            ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
+            learnerWebServices.SetInsertedForImportRecord(fakeId);
+
+            // Verify
+            mockLearnerWebRepository.Verify(f => f.SetInsertedForImportRecord(It.IsAny<int>()), Times.Once);
+            mockLearnerWebRepository.VerifyNoOtherCalls();
+            Mock.VerifyAll(mockLearnerWebRepository);
+        }
+
+        [Test]
+        public void UpdateImportHistoryWithCurriculaIdTest()
+        {
+            // Setup
+            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            History fakeHistory = fixture.Generate<History>();
+            Mock<ILearnerWebRepository> mockLearnerWebRepository = new Mock<ILearnerWebRepository>();
+            IsuImportHistory fakeIsuImportHistory = fixture.Generate<IsuImportHistory>();
+            IsuImportHistory fakeIsuImportHistory2 = fakeIsuImportHistory;
+            fakeIsuImportHistory2.CurriculaId = fakeHistory.CurriculaId;
+            mockLearnerWebRepository.Setup(f => f.GetImportHistory(fakeCitiRecord.CitiId, fakeCitiRecord.GroupId, fakeCitiRecord.GetCompletionDate())).Returns(fakeIsuImportHistory);
+            mockLearnerWebRepository.Setup(f => f.UpdateImportHistoryWithCurriculaId(fakeIsuImportHistory2)).Verifiable();
+
+            // Execute
+            ILearnerWebServices learnerWebServices = new LearnerWebService(mockLearnerWebRepository.Object);
+            learnerWebServices.UpdateImportHistoryWithCurriculaId(fakeCitiRecord, fakeHistory);
+
+            // Verify
+            mockLearnerWebRepository.Verify(f => f.GetImportHistory(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Once);
+            mockLearnerWebRepository.Verify(f => f.UpdateImportHistoryWithCurriculaId(It.IsAny<IsuImportHistory>()), Times.Once);
+            mockLearnerWebRepository.VerifyNoOtherCalls();
         }
     }
 }

@@ -6,7 +6,6 @@ namespace CitiDownloader.services
 {
     public interface ICitiDownloadService
     {
-        string DownloadFullFile();
-        string DownloadIncrementalFile();
+        string DownloadFile();
     }
 }

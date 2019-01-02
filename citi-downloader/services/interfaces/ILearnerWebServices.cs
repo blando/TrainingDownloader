@@ -11,11 +11,13 @@ namespace CitiDownloader.services
         IsuImportHistory InsertImportHistory(CitiRecord citiRecord);
         bool IsValid(CitiRecord citiRecord);
         string FindUser(CitiRecord citiRecord);
+        IsuImportHistory SetInsertedForImportRecord(int id);
         string FindCourseId(CitiRecord citiRecord);
-        void InsertHistory(History history, out bool inserted);
+        int InsertHistory(History history, out bool inserted);
         History CreateHistoryRecord(CitiRecord citiRecord);
         bool IsVerified(CitiRecord citi);
         History GetHistoryByCurriculaId(CitiRecord citiRecord);
-        
+        History GetHistoryByCitiIdCourseIdDate(CitiRecord citiRecord);
+        void UpdateImportHistoryWithCurriculaId(CitiRecord citiRecord, History history);
     }
 }

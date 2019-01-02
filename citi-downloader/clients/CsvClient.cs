@@ -7,15 +7,16 @@ using CitiDownloader.models;
 using CitiDownloader.models.entities;
 using CsvHelper;
 using CsvHelper.Configuration;
+using CitiDownloader.configurations;
 
 namespace CitiDownloader.wrappers
 {
-    public class CsvWrapper : ICsvWrapper
+    public class CsvClient : ICsvClient
     {
 
         private ApplicationConfiguration config;
 
-        public CsvWrapper(ApplicationConfiguration config)
+        public CsvClient(ApplicationConfiguration config)
         {
             this.config = config;
         }
@@ -35,19 +36,38 @@ namespace CitiDownloader.wrappers
 
         public string WriteHistoryRecordsToFile(List<History> histories)
         {
-            string outputFile = config.FullOutputPath;
+            string outputFile = config.OutputFilePath;
             Configuration csvConfig = new Configuration
             {
                 QuoteAllFields = true,
-                HasHeaderRecord = true,
+                HasHeaderRecord = false,
                 Delimiter = ","
             };
 
             using (CsvWriter csvWriter = new CsvWriter(new StreamWriter(outputFile), csvConfig))
             {
+                csvWriter.Configuration.RegisterClassMap<HistoryCSVMap>();
                 csvWriter.WriteRecords<History>(histories);
             }
             return outputFile;
+        }
+    }
+
+    public sealed class HistoryCSVMap : ClassMap<History>
+    {
+        public HistoryCSVMap()
+        {
+            Map(m => m.Date_Time_Stamp).Index(0);
+            Map(m => m.LearnerId).Index(1);
+            Map(m => m.CourseId).Index(2);
+            Map(m => m.Title).Index(3);
+            Map(m => m.Status).Index(4);
+            Map(m => m.Enrollment_Date).Index(5);
+            Map(m => m.Score).Index(6);
+            Map(m => m.CompletionStatusId).Index(7);
+            Map(m => m.Status_Date).Index(8);
+            Map(m => m.date_expires).Index(9);
+            Map(m => m.PassingScore).Index(10);
         }
     }
 

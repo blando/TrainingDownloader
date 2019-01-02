@@ -6,6 +6,7 @@ using Moq;
 using SimpleFixture;
 using CitiDownloader.wrappers;
 using CitiDownloader.services;
+using CitiDownloader.configurations;
 using NUnit.Framework.Constraints;
 using System.Net;
 
@@ -15,6 +16,7 @@ namespace CitiDownloaderTests.services
     public class CitiDownloaderServiceTests
     {
         private Fixture fixture;
+        private string appConfigTestFile = "test-settings.json";
         public CitiDownloaderServiceTests()
         {
             this.fixture = new Fixture();
@@ -26,16 +28,17 @@ namespace CitiDownloaderTests.services
             // Setup
             string fullFile = fixture.Generate<string>();
             string fullSavePath = fixture.Generate<string>();
-            Mock<ApplicationConfiguration> mockApplicationConfiguration = new Mock<ApplicationConfiguration>();
-            mockApplicationConfiguration.SetupGet(p => p.FullFile).Returns(fullFile);
-            mockApplicationConfiguration.SetupGet(p => p.FullSavePath).Returns(fullSavePath);
+            object[] args = new object[] { new string[] { "full", "upload", appConfigTestFile }};
+            Mock<ApplicationConfiguration> mockApplicationConfiguration = new Mock<ApplicationConfiguration>(MockBehavior.Loose, args);
+            mockApplicationConfiguration.SetupGet(p => p.DownloadUrl).Returns(fullFile);
+            mockApplicationConfiguration.SetupGet(p => p.SaveFilePath).Returns(fullSavePath);
             Mock<IWebClientWrapper> mockWebClientWrapper = new Mock<IWebClientWrapper>();
             mockWebClientWrapper.Setup(f => f.DownloadFile(fullFile, fullSavePath)).Verifiable();
 
 
             // Execute
             ICitiDownloadService citiDownloadService = new CitiDownloadService(mockApplicationConfiguration.Object, mockWebClientWrapper.Object);
-            string response = citiDownloadService.DownloadFullFile();
+            string response = citiDownloadService.DownloadFile();
 
 
             // Verify
@@ -50,15 +53,16 @@ namespace CitiDownloaderTests.services
             // Setup
             string fullFile = fixture.Generate<string>();
             string fullSavePath = fixture.Generate<string>();
-            Mock<ApplicationConfiguration> mockApplicationConfiguration = new Mock<ApplicationConfiguration>();
-            mockApplicationConfiguration.SetupGet(p => p.FullFile).Returns(fullFile);
-            mockApplicationConfiguration.SetupGet(p => p.FullSavePath).Returns(fullSavePath);
+            object[] args = new object[] { new string[] { "full", "upload", appConfigTestFile }};
+            Mock<ApplicationConfiguration> mockApplicationConfiguration = new Mock<ApplicationConfiguration>(MockBehavior.Loose, args);
+            mockApplicationConfiguration.SetupGet(p => p.DownloadUrl).Returns(fullFile);
+            mockApplicationConfiguration.SetupGet(p => p.SaveFilePath).Returns(fullSavePath);
             Mock<IWebClientWrapper> mockWebClientWrapper = new Mock<IWebClientWrapper>();
             mockWebClientWrapper.Setup(f => f.DownloadFile(fullFile, fullSavePath)).Throws(new WebException());
 
             // Execute
             ICitiDownloadService citiDownloadService = new CitiDownloadService(mockApplicationConfiguration.Object, mockWebClientWrapper.Object);
-            ActualValueDelegate<object> testDelegate = () => citiDownloadService.DownloadFullFile();
+            ActualValueDelegate<object> testDelegate = () => citiDownloadService.DownloadFile();
 
             // Verify
             Assert.That(testDelegate, Throws.TypeOf<WebException>());
@@ -70,16 +74,17 @@ namespace CitiDownloaderTests.services
             // Setup
             string incrementalFile = fixture.Generate<string>();
             string incrementalSavePath = fixture.Generate<string>();
-            Mock<ApplicationConfiguration> mockApplicationConfiguration = new Mock<ApplicationConfiguration>();
-            mockApplicationConfiguration.SetupGet(p => p.IncrementalFile).Returns(incrementalFile);
-            mockApplicationConfiguration.SetupGet(p => p.IncrementalSavePath).Returns(incrementalSavePath);
+            object[] args = new object[] { new string[] { "delta", "upload", appConfigTestFile },};
+            Mock<ApplicationConfiguration> mockApplicationConfiguration = new Mock<ApplicationConfiguration>(MockBehavior.Loose, args);
+            mockApplicationConfiguration.SetupGet(p => p.DownloadUrl).Returns(incrementalFile);
+            mockApplicationConfiguration.SetupGet(p => p.SaveFilePath).Returns(incrementalSavePath);
             Mock<IWebClientWrapper> mockWebClientWrapper = new Mock<IWebClientWrapper>();
             mockWebClientWrapper.Setup(f => f.DownloadFile(incrementalFile, incrementalSavePath)).Verifiable();
 
 
             // Execute
             ICitiDownloadService citiDownloadService = new CitiDownloadService(mockApplicationConfiguration.Object, mockWebClientWrapper.Object);
-            string response = citiDownloadService.DownloadIncrementalFile();
+            string response = citiDownloadService.DownloadFile();
 
 
             // Verify
@@ -94,15 +99,16 @@ namespace CitiDownloaderTests.services
             // Setup
             string incrementalFile = fixture.Generate<string>();
             string incrementalSavePath = fixture.Generate<string>();
-            Mock<ApplicationConfiguration> mockApplicationConfiguration = new Mock<ApplicationConfiguration>();
-            mockApplicationConfiguration.SetupGet(p => p.IncrementalFile).Returns(incrementalFile);
-            mockApplicationConfiguration.SetupGet(p => p.IncrementalSavePath).Returns(incrementalSavePath);
+            object[] args = new object[] { new string[] { "delta", "upload", appConfigTestFile }};
+            Mock<ApplicationConfiguration> mockApplicationConfiguration = new Mock<ApplicationConfiguration>(MockBehavior.Loose, args);
+            mockApplicationConfiguration.SetupGet(p => p.DownloadUrl).Returns(incrementalFile);
+            mockApplicationConfiguration.SetupGet(p => p.SaveFilePath).Returns(incrementalSavePath);
             Mock<IWebClientWrapper> mockWebClientWrapper = new Mock<IWebClientWrapper>();
             mockWebClientWrapper.Setup(f => f.DownloadFile(incrementalFile, incrementalSavePath)).Throws(new WebException());
 
             // Execute
             ICitiDownloadService citiDownloadService = new CitiDownloadService(mockApplicationConfiguration.Object, mockWebClientWrapper.Object);
-            ActualValueDelegate<object> testDelegate = () => citiDownloadService.DownloadIncrementalFile();
+            ActualValueDelegate<object> testDelegate = () => citiDownloadService.DownloadFile();
 
             // Verify
             Assert.That(testDelegate, Throws.TypeOf<WebException>());

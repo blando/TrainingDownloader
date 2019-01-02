@@ -21,7 +21,7 @@ namespace CitiDownloader.repositories
             this.isuCitiLwLearners = db.IsuCitiLwLearners.ToList();
         }
 
-        public int InsertAppTrainingRecordHistory(IsuImportHistory isuImportHistory)
+        public IsuImportHistory InsertAppTrainingRecordHistory(IsuImportHistory isuImportHistory)
         {
             IsuImportHistory existingIsuImportHistory = isuImportHistories.Where(h => h.CitiId == isuImportHistory.CitiId
                 && h.CitiCourseId == isuImportHistory.CitiCourseId
@@ -31,9 +31,9 @@ namespace CitiDownloader.repositories
                 db.IsuImportHistory.Add(isuImportHistory);
                 db.SaveChanges();
                 isuImportHistories.Add(isuImportHistory);
-                return isuImportHistory.Id;
+                return isuImportHistory;
             }
-            return existingIsuImportHistory.Id;
+            return existingIsuImportHistory;
         }
 
         public void UpdateCitiIdToLearner(Learners learner)
@@ -49,14 +49,26 @@ namespace CitiDownloader.repositories
             return isuCitiLwCourse.Id;
         }
 
-        public void InsertTrainingRecord(History history)
+        public int InsertTrainingRecord(History history)
         {
             db.History.Add(history);
             db.SaveChanges();
+            return history.CurriculaId;
+        }
+
+        public IsuImportHistory SetInsertedForImportRecord(int id)
+        {
+            IsuImportHistory isuImportHistory = db.IsuImportHistory.Find(id);
+            isuImportHistory.Inserted = true;
+            isuImportHistory.Verified = true;
+            db.IsuImportHistory.Update(isuImportHistory);
+            db.SaveChanges();
+            return isuImportHistory;
         }
 
         public void UpdateAppTrainingRecordIsInserted(IsuImportHistory isuImportHistory)
         {
+            isuImportHistory.Inserted = true;
             db.IsuImportHistory.Update(isuImportHistory);
             db.SaveChanges();
             isuImportHistories.Add(isuImportHistory);
@@ -69,7 +81,7 @@ namespace CitiDownloader.repositories
 
         public IsuCitiLwLearners GetIsuCitiLwLearner(string CitiId)
         {
-            return isuCitiLwLearners.Where(l => l.CitiLearnerId == CitiId).FirstOrDefault();
+            return isuCitiLwLearners.Where(l => l.CitiLearnerId == CitiId).SingleOrDefault();
         }
 
         public Learners GetLearnerByEmail(string Email)
@@ -119,5 +131,12 @@ namespace CitiDownloader.repositories
         {
             return db.History.Where(h => h.LearnerId == univId && h.CourseId == courseId && h.StatusDate == CompletedDate).FirstOrDefault();
         }
+
+        public void UpdateImportHistoryWithCurriculaId(IsuImportHistory isuImportHistory)
+        {
+            db.IsuImportHistory.Update(isuImportHistory);
+            db.SaveChanges();
+        }
+
     }
 }

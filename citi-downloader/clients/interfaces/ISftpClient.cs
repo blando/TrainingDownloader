@@ -4,7 +4,7 @@ using System.Text;
 
 namespace CitiDownloader.wrappers
 {
-    public interface ISftpWrapper
+    public interface ISftpClient
     {
         void Upload(string file);
     }

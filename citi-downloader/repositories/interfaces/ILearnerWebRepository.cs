@@ -10,9 +10,10 @@ namespace CitiDownloader.repositories
     {
         void UpdateCitiIdToLearner(Learners leanrers);
         int InsertCourse(IsuCitiLwCourses isuCitiLwCourse);
-        void InsertTrainingRecord(History history);
+        int InsertTrainingRecord(History history);
+        IsuImportHistory SetInsertedForImportRecord(int id);
         void UpdateAppTrainingRecordIsInserted(IsuImportHistory isuImportHistory);
-        int InsertAppTrainingRecordHistory(IsuImportHistory isuImportHistory);
+        IsuImportHistory InsertAppTrainingRecordHistory(IsuImportHistory isuImportHistory);
         History GetHistoryRecordByCurriculaId(int curriculaId);
         History GetHistoryRecordByLearnerCourseDate(string univId, string courseId, DateTime CompletedDate);
         IsuCitiLwLearners GetIsuCitiLwLearner(string CitiId);
@@ -22,5 +23,6 @@ namespace CitiDownloader.repositories
         Courses GetCourseByCitiCourseId(string CitiCourseId);
         IsuImportHistory GetImportHistory(string CitiId, string CitiCourseId, DateTime CompletedDate);
         void UpdateOrInsertISUCitiLwLearner(IsuCitiLwLearners isuCitiLwLearner);
+        void UpdateImportHistoryWithCurriculaId(IsuImportHistory isuImportHistory);
     }
 }

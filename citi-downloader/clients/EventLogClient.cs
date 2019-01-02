@@ -2,17 +2,19 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using CitiDownloader.configurations;
 
 namespace CitiDownloader.wrappers
 {
-    public class EventLogWrapper : IEventLogWrapper
+    public class EventLogClient : IEventLogClient
     {
         private EventLog eventLog { get; set; }
         private ApplicationConfiguration config { get; set; }
 
-        public EventLogWrapper(ApplicationConfiguration config)
+        public EventLogClient(ApplicationConfiguration config)
         {
             this.config = config;
 
@@ -59,9 +61,18 @@ namespace CitiDownloader.wrappers
             }
             else
             {
-
+                WriteToTextFile(message, type);
             }
         }
+
+        private void WriteToTextFile(string message, EventLogEntryType type)
+        {
+            using (StreamWriter file = new StreamWriter(config.LinuxTextLogName))
+            {
+                file.WriteLine(string.Format("{0}\t{1}\t{2}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), type.ToString(), message));
+            }
+        }
+
 
     }
 }

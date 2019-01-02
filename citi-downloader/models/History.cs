@@ -7,28 +7,37 @@ namespace CitiDownloader.models.entities
 {
     public partial class History
     {
-        public string Learner_Id { get; set; }
-        public string Course_Id { get; set; }
-        private DateTime? _EnrollmentDate { get; set; }
-        private DateTime? _Status_Date { get; set; }
+        public string Enrollment_Date
+        {
+            get
+            {
+                return this.EnrollmentDate.HasValue ? RoundDateTime(this.EnrollmentDate).Value.ToString("yyyy-MM-dd HH:mm:ss") : "NULL";
+            }
+        }
         public string Status_Date
         {
             get
             {
-                return this._Status_Date == null ? "NULL" : this._Status_Date.Value.ToString("yyyy-MM-dd HH:mm:00");
+                return this.StatusDate.HasValue ? RoundDateTime(this.StatusDate).Value.ToString("yyyy-MM-dd HH:mm:ss") : "NULL";
             }
         }
-        private DateTime? _date_expires { get; set; }
+        public string Date_Time_Stamp
+        {
+            get
+            {
+                return GetDateTimeStamp();
+            }
+        }
         public string date_expires
         {
             get
             {
-                return this._date_expires == null ? "NULL" : this._date_expires.Value.ToString("yyyy-MM-dd HH:mm:00");
+                return this.DateExpires.HasValue ? RoundDateTime(this.DateExpires).Value.ToString("yyyy-MM-dd HH:mm:ss") : "NULL";
             }
         }
         private bool IsValid { get; set; }
         private string NetId { get; set; }
-
+        private string importId { get; set; }
 
         public override string ToString()
         {
@@ -43,7 +52,7 @@ namespace CitiDownloader.models.entities
                     "Status_Date={9}{0}" +
                     "date_expires={10}{0}" +
                     "PassingScore={11}{0}",
-                Environment.NewLine, this.DateTimeStamp, this.Learner_Id, this.Course_Id, this.Title, this.Status, this.EnrollmentDate, this.Score.ToString(),
+                Environment.NewLine, this.DateTimeStamp, this.LearnerId, this.CourseId, this.Title, this.Status, this.EnrollmentDate, this.Score.ToString(),
                 this.CompletionStatusId, this.Status_Date, this.date_expires, this.PassingScore.ToString());
         }
         public string GetNetId()
@@ -52,7 +61,7 @@ namespace CitiDownloader.models.entities
         }
         public string GetDateTimeStamp()
         {
-            return ((DateTime)this._Status_Date).ToString("yyMMddHHmmss");
+            return this.StatusDate.HasValue ? ((DateTime)this.StatusDate).ToString("yyMMddHHmmss") : DateTime.Now.ToString("yyMMddHHmmss");
         }
 
         public bool GetIsValid()
@@ -62,19 +71,19 @@ namespace CitiDownloader.models.entities
 
         public DateTime? GetDateExpires()
         {
-            return this._date_expires;
+            return this.DateExpires;
         }
 
         public DateTime? GetEnrollmentDate()
         {
-            return this._EnrollmentDate;
+            return this.EnrollmentDate;
         }
 
         public DateTime GetStatusDate()
         {
-            if (this._Status_Date.HasValue)
+            if (this.StatusDate.HasValue)
             {
-                return this._Status_Date.Value;
+                return this.StatusDate.Value;
             }
             return DateTime.MinValue;
         }
@@ -96,5 +105,15 @@ namespace CitiDownloader.models.entities
 
             return dt1;
         }
+        public void SetImportId(string id)
+        {
+            this.importId = id;
+        }
+        public string GetImportId()
+        {
+            return this.importId;
+        }
+
+
     }
 }

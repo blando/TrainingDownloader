@@ -5,21 +5,25 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Linq;
+using CitiDownloader.configurations;
 
 namespace CitiDownloader.services
 {
-    public class Log : ILog
+    public class LogService : ILogService
     {
         private List<string> LogCache { get; set; }
         public bool CacheLogMessages { get; set; }
-        public bool Verbose { get; set; }
-        private IEventLogWrapper eventLogWrapper { get; set; }
+        private IEventLogClient eventLogClient { get; set; }
+        private ApplicationConfiguration appConfig { get; set; }
         public enum EventType { Information = 0, Warning = 1, Error = 2, Debug = 3 };
 
-        public Log(IEventLogWrapper eventLogWrapper)
+        public LogService(IEventLogClient eventLogClient, ApplicationConfiguration appConfig)
         {
-            this.eventLogWrapper = eventLogWrapper;
-            
+            this.eventLogClient = eventLogClient;
+            this.appConfig = appConfig;
+            this.LogCache = new List<string>();
+            this.CacheLogMessages = true;
         }
 
         public void LogMessage(string message, EventType eventType)
@@ -42,14 +46,14 @@ namespace CitiDownloader.services
                     break;
             }
             if (WriteToEventLog)
-                eventLogWrapper.LogMessage(message, eventLogEntryType);
+                eventLogClient.LogMessage(message, eventLogEntryType);
 
             if (CacheLogMessages)
             {
                 LogCache.Add(string.Format("{0}\t{1}\t{2}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), eventType.ToString(), message));
             }
 
-            if (Verbose)
+            if (appConfig.verbose)
             {
                 Console.WriteLine(string.Format("{0}\t{1}\t{2}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), eventType.ToString(), message));
             }
@@ -62,12 +66,12 @@ namespace CitiDownloader.services
 
         public List<string> GetCache()
         {
-            return LogCache;
+            return LogCache.ToList();
         }
 
         public List<string> GetCacheAndFlush()
         {
-            List<string> temp = LogCache;
+            List<string> temp = LogCache.ToList();
             LogCache.Clear();
             return temp;
         }

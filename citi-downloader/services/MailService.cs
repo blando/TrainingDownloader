@@ -4,16 +4,18 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
+using HtmlTags;
+using CitiDownloader.configurations;
 
 namespace CitiDownloader.services
 {
     public class MailService : IMailService
     {
         private IReportingService reportingService;
-        private IMailWrapper mailWrapper;
+        private IMailClient mailWrapper;
         private ApplicationConfiguration config;
 
-        public MailService(IReportingService reportingService, IMailWrapper mailWrapper, ApplicationConfiguration config)
+        public MailService(IReportingService reportingService, IMailClient mailWrapper, ApplicationConfiguration config)
         {
             this.reportingService = reportingService;
             this.mailWrapper = mailWrapper;
@@ -29,30 +31,37 @@ namespace CitiDownloader.services
 
                 if (users.Any() || courses.Any())
                 {
+                    
                     StringBuilder body = new StringBuilder();
                     body.Append("<h2>CITI Training Messages</h2>");
                     if (courses.Any())
                     {
+                        TableTag table = new TableTag();
+                        table.AddHeaderRow(CitiRecord.GetTableHeaderRow());
+
                         body.Append("<p><h4>Missing Courses</h4>The following courses are unknown and need to be setup in LearnerWeb and tied to the Citi-Course-Id.</p>");
-                        body.Append("<table><tr><th>CitiId</th><th>FirstName</th><th>LastName</th><th>EmailAddress</th><th>NetId</th><th>RegistrationDate</th><th>CourseName</th><th>Citi Course Id</th><th>Group</th><th>Score</th><th>CompletionDate</th><th>ExpirationDate</th><th>InstitutionalEmailAddress</th><th></th></tr>");
+
                         foreach (ReportMessage reportMessage in courses)
                         {
                             CitiRecord citiRecord = reportMessage.attachedObject as CitiRecord;
-                            body.Append(citiRecord.ToTableString(config.AdminUrl));
+                            table.AddBodyRow(citiRecord.ToTableRow());
                         }
-                        body.Append("</table>");
+                        body.Append(table.ToHtmlString());
                     }
 
                     if (users.Any())
                     {
                         body.Append("<p><h4>Missing Users</h4>The following users are unknown and need to be setup in LearnerWeb and tied to the Citi-Id.</p>");
-                        body.Append("<table><tr><th>CitiId</th><th>FirstName</th><th>LastName</th><th>EmailAddress</th><th>NetId</th><th>RegistrationDate</th><th>CourseName</th><th>Citi Course Id</th><th>Group</th><th>Score</th><th>CompletionDate</th><th>ExpirationDate</th><th>InstitutionalEmailAddress</th><th></th></tr>");
+           
+                        TableTag table = new TableTag();
+                        table.AddHeaderRow(CitiRecord.GetTableHeaderRow());
+
                         foreach (ReportMessage reportMessage in courses)
                         {
                             CitiRecord citiRecord = reportMessage.attachedObject as CitiRecord;
-                            body.Append(citiRecord.ToTableString(config.AdminUrl));
+                            table.AddBodyRow(citiRecord.ToTableRow());
                         }
-                        body.Append("</table>");
+                        body.Append(table.ToHtmlString());
                     }
 
                     mailWrapper.SendEmail(config.AdminMailToAddress, config.MailSenderAddress, config.AdminMailSubject, body.ToString());

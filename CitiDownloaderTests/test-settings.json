@@ -1,0 +1,21 @@
+﻿{
+  "FullFileDownloadUrl": "https://test.com/fullFile",
+  "IncrementalFileDownloadUrl": "https://test.com/incrementalFile",
+  "LocalSavePath": "C:\\Downloads",
+  "OutputFileName": "output_{0}.csv",
+  "FullFileName": "fullFile_{0}.csv",
+  "IncrementalFileName": "incrementalFile_{0}.csv",
+  "SftpServer": "sftpserver.com",
+  "SftpUserName": "user",
+  "SftpPassword": "password",
+  "SftpRemotePath": "/folder1/folder2",
+  "SftpUploadFileName": "uploadFile_{0}.CSV",
+  "AdminUrl": "https://admin.com/site/",
+  "AdminMailToAddress": "receive@iastate.edu",
+  "AdminMailSubject": "Admin Mail Subject",
+  "SysAdminMailToAddress": "sys-receive@iastate.edu",
+  "SysAdminMailSubject": "Sys Admin Mail Subject",
+  "MailSenderAddress": "Sender <sender@iastate.edu>",
+  "EventLogName": "Test-EventLog",
+  "LinuxTextLogName": "/var/log/test.log"
+}

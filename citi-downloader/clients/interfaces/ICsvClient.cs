@@ -6,7 +6,7 @@ using System.Text;
 
 namespace CitiDownloader.wrappers
 {
-    public interface ICsvWrapper
+    public interface ICsvClient
     {
         List<CitiRecord> GetCitiRecords(string file);
         string WriteHistoryRecordsToFile(List<History> histories);

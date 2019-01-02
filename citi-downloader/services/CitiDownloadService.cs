@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using CitiDownloader.configurations;
 
 namespace CitiDownloader.services
 {
@@ -17,16 +18,10 @@ namespace CitiDownloader.services
             this.webClientWrapper = webClientWrapper;
         }
 
-        public string DownloadFullFile()
+        public string DownloadFile()
         {
-            webClientWrapper.DownloadFile(config.FullFile, config.FullSavePath);
-            return config.FullSavePath;
-        }
-
-        public string DownloadIncrementalFile()
-        {
-            webClientWrapper.DownloadFile(config.IncrementalFile, config.IncrementalSavePath);
-            return config.IncrementalSavePath;
+            webClientWrapper.DownloadFile(config.DownloadUrl, config.SaveFilePath);
+            return config.SaveFilePath;
         }
     }
 }

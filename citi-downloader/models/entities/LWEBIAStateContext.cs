@@ -25,8 +25,8 @@ namespace CitiDownloader.models.entities
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            //optionsBuilder.UseSqlServer("Server=learnisudbprod.its.iastate.edu,1433;Database=LWEB-IAState;User ID=lweb_citi_user;Password=zPE#LB64J9uYBkiPTPSGKHZ;Trusted_Connection=True;");
-            optionsBuilder.UseSqlServer("Server=learnisudbprod.its.iastate.edu,1433;Database=LWEB-IAState-TEST;User ID=lweb_citi_user;Password=zPE#LB64J9uYBkiPTPSGKHZ;Trusted_Connection=True;");
+            optionsBuilder.UseSqlServer("Server=learnisudbprod.its.iastate.edu,1433;Database=LWEB-IAState;User ID=lweb_citi_user;Password=zPE#LB64J9uYBkiPTPSGKHZ;Trusted_Connection=True;");
+            //optionsBuilder.UseSqlServer("Server=learnisudbprod.its.iastate.edu,1433;Database=LWEB-IAState-TEST;User ID=lweb_citi_user;Password=zPE#LB64J9uYBkiPTPSGKHZ;Trusted_Connection=True;");
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

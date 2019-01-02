@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics;
 using ISULogger;
-using static CitiDownloader.services.Log;
+using static CitiDownloader.services.LogService;
 
 namespace CitiDownloader.services
 {
-    public interface ILog
+    public interface ILogService
     {
         void LogMessage(string message, EventType eventType);
         void FlushCache();

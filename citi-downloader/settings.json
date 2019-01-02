@@ -1,7 +1,7 @@
 {
-  "FullFile": "https://www.citiprogram.org/members/institutionaladministrators/transcriptdownload.asp?ID=7FB4D98C-1312-4D25-A037-3863D5DC26C9&category=0&data=downloadAll",
-  "IncrementalFile": "https://www.citiprogram.org/members/institutionaladministrators/transcriptdownload.asp?ID=7FB4D98C-1312-4D25-A037-3863D5DC26C9&category=0&data=lastdownload",
-  "SavePath": "C:\\Downloads",
+  "FullFileDownloadUrl": "https://www.citiprogram.org/members/institutionaladministrators/transcriptdownload.asp?ID=7FB4D98C-1312-4D25-A037-3863D5DC26C9&category=0&data=downloadAll",
+  "IncrementalFileDownloadUrl": "https://www.citiprogram.org/members/institutionaladministrators/transcriptdownload.asp?ID=7FB4D98C-1312-4D25-A037-3863D5DC26C9&category=0&data=lastdownload",
+  "LocalSavePath": "C:\\Downloads",
   "OutputFileName": "CITI_DATA_{0}.csv",
   "FullFileName": "CITI_Download_{0}.csv",
   "IncrementalFileName": "CITI_Delta_Download_{0}.csv",
@@ -11,10 +11,11 @@
   "SftpRemotePath": "/dataxfer/ftpusers/ehsftp/upload/",
   "SftpUploadFileName": "CITI_DATA_UPLOAD_{0}.CSV",
   "AdminUrl": "https://webapp.its.iastate.edu/learn/import/",
-  "AdminMailToAddress": "its-citi-messages@iastate.edu",
+  "AdminMailToAddress": "mbland@iastate.edu",
   "AdminMailSubject": "CITI Data Error",
-  "SysAdminMailToAddress": "its-learn-import-admins",
+  "SysAdminMailToAddress": "its-learn-import-admins@iastate.edu",
   "SysAdminMailSubject": "CITI System Errors",
   "MailSenderAddress": "CITI Alert <provision-alerts@iastate.edu>",
-  "EventLogName":  "CITIDownloader"
+  "EventLogName": "CITIDownloader",
+  "LinuxTextLogName":  "/var/log/CITIDownloader.log"
 }

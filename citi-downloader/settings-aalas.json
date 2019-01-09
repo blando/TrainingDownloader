@@ -1,0 +1,40 @@
+{
+  "ApplicationConfiguration": {
+    "FullFileDownloadUrl": "https://www.aalaslearninglibrary.org/Pages/Coordinator/DownLoadTranscriptReport.aspx?ID=015476C4-E8F0-4E10-9E56-AF3E69D53CC533819&format=CSV",
+    "IncrementalFileDownloadUrl": "https://www.aalaslearninglibrary.org/Pages/Coordinator/DownLoadTranscriptReport.aspx?ID=015476C4-E8F0-4E10-9E56-AF3E69D53CC533819&format=CSV",
+    "LocalSavePath": "C:\\Downloads\\AALAS",
+    "OutputFileName": "AALAS_DATA_{0}.csv",
+    "FullFileName": "AALAS_Download_{0}.csv",
+    "IncrementalFileName": "AALAS_Delta_Download_{0}.csv",
+    "SftpServer": "filetrans2.its.iastate.edu",
+    "SftpUserName": "ehsftp",
+    "SftpPassword": "C7atEnakA6",
+    "SftpRemotePath": "/dataxfer/ftpusers/ehsftp/upload/",
+    "SftpUploadFileName": "AALAS_DATA_UPLOAD_{0}.CSV",
+    "AdminUrl": "https://webapp.its.iastate.edu/learn/import/",
+    "AdminMailToAddress": "mbland@iastate.edu",
+    "AdminMailSubject": "AALAS Data Error",
+    "SysAdminMailToAddress": "its-learn-import-admins@iastate.edu",
+    "SysAdminMailSubject": "AALAS System Errors",
+    "MailSenderAddress": "AALAS Alert <provision-alerts@iastate.edu>",
+    "EventLogName": "AALASTrainingDownloader",
+    "LinuxTextLogName": "/var/log/AALASDownloader.log",
+    "VendorApplication": "AALAS",
+    "FieldMaps": {
+      "VendorUserId": 0,
+      "FirstName": 1,
+      "LastName": 2,
+      "EmailAddress": 3,
+      "RegistrationDate": 4,
+      "VendorCourseName": 5,
+      "StageNumber": "",
+      "StageDescription": "",
+      "CompletionReportNum": "",
+      "CompletionDate": 12,
+      "Score": 8,
+      "PassingScore": 9,
+      "ExpirationDate": "",
+      "VendorCourseId": 15
+    }
+  }
+}

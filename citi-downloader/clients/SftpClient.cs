@@ -4,10 +4,10 @@ using Renci;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using CitiDownloader.configurations;
+using TrainingDownloader.configurations;
 using System.IO;
 
-namespace CitiDownloader.wrappers
+namespace TrainingDownloader.wrappers
 {
     public class SftpClient : ISftpClient
     {
@@ -20,7 +20,7 @@ namespace CitiDownloader.wrappers
 
         public void Upload(string file)
         {
-            string remotePath = string.Format("{0}/{1}", config.SftpRemotePath, config.SftpUploadFileName);
+            string remotePath = string.Format("{0}/{1}", config.SftpRemotePath, config.SftpUploadFileNameStr);
 
             PasswordAuthenticationMethod password = new PasswordAuthenticationMethod(config.SftpUserName, config.SftpPassword);
 

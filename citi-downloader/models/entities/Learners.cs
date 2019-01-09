@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CitiDownloader.models.entities
+namespace TrainingDownloader.models.entities
 {
     public partial class Learners
     {

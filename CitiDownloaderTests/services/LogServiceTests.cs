@@ -1,27 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
-using CitiDownloader.wrappers;
-using CitiDownloader.services;
+using TrainingDownloader.wrappers;
+using TrainingDownloader.services;
 using Moq;
 using NUnit.Framework;
 using SimpleFixture;
 using System.Diagnostics;
-using static CitiDownloader.services.LogService;
-using CitiDownloader.configurations;
+using static TrainingDownloader.services.LogService;
+using TrainingDownloader.configurations;
 
-namespace CitiDownloaderTests.services
+namespace TrainingDownloaderTests.services
 {
     [TestFixture]
     public class LogServiceTests
     {
         private Mock<IEventLogClient> mockEventLogClient;
-        private Mock<ApplicationConfiguration> mockApplicationConfiguration;
-        private object[] args;
+        private ApplicationConfiguration applicationConfiguration;
         private void SetupMocks()
         {
+            applicationConfiguration = new ApplicationConfiguration();
             mockEventLogClient = new Mock<IEventLogClient>();
-            args = new object[] { new string[] { "full", "upload", "test-settings.json" } };
-            mockApplicationConfiguration = new Mock<ApplicationConfiguration>(MockBehavior.Loose, args);
         }
 
         [Test]
@@ -36,7 +34,7 @@ namespace CitiDownloaderTests.services
             mockEventLogClient.Setup(f => f.LogMessage(It.IsAny<string>(), EventLogEntryType.Information)).Verifiable();
 
             // Execute
-            ILogService logService = new LogService(mockEventLogClient.Object, mockApplicationConfiguration.Object);
+            ILogService logService = new LogService(mockEventLogClient.Object, applicationConfiguration);
             logService.LogMessage(message, eventType);
 
             // Verify
@@ -57,7 +55,7 @@ namespace CitiDownloaderTests.services
             mockEventLogClient.Setup(f => f.LogMessage(It.IsAny<string>(), EventLogEntryType.Warning)).Verifiable();
 
             // Execute
-            ILogService logService = new LogService(mockEventLogClient.Object, mockApplicationConfiguration.Object);
+            ILogService logService = new LogService(mockEventLogClient.Object, applicationConfiguration);
             logService.LogMessage(message, eventType);
 
             // Verify
@@ -78,7 +76,7 @@ namespace CitiDownloaderTests.services
             mockEventLogClient.Setup(f => f.LogMessage(It.IsAny<string>(), EventLogEntryType.Error)).Verifiable();
 
             // Execute
-            ILogService logService = new LogService(mockEventLogClient.Object, mockApplicationConfiguration.Object);
+            ILogService logService = new LogService(mockEventLogClient.Object, applicationConfiguration);
             logService.LogMessage(message, eventType);
 
             // Verify
@@ -95,11 +93,11 @@ namespace CitiDownloaderTests.services
             EventType eventType = EventType.Error;
             Fixture fixture = new Fixture();
             string message = fixture.Generate<string>();
-            mockApplicationConfiguration.SetupGet(f => f.verbose).Returns(true);
+            applicationConfiguration.verbose = true;
             mockEventLogClient.Setup(f => f.LogMessage(It.IsAny<string>(), EventLogEntryType.Error)).Verifiable();
 
             // Execute
-            ILogService logService = new LogService(mockEventLogClient.Object, mockApplicationConfiguration.Object);
+            ILogService logService = new LogService(mockEventLogClient.Object, applicationConfiguration);
             
             logService.LogMessage(message, eventType);
 
@@ -119,7 +117,7 @@ namespace CitiDownloaderTests.services
             string message = fixture.Generate<string>();
 
             // Execute
-            ILogService logService = new LogService(mockEventLogClient.Object, mockApplicationConfiguration.Object);
+            ILogService logService = new LogService(mockEventLogClient.Object, applicationConfiguration);
             logService.LogMessage(message, eventType);
 
             // Verify
@@ -139,7 +137,7 @@ namespace CitiDownloaderTests.services
             mockEventLogClient.Setup(f => f.LogMessage(It.IsAny<string>(), It.IsAny<EventLogEntryType>())).Throws(new Exception());
 
             // Execute
-            ILogService logService = new LogService(mockEventLogClient.Object, mockApplicationConfiguration.Object);
+            ILogService logService = new LogService(mockEventLogClient.Object, applicationConfiguration);
 
             // Execute & Verify
             Assert.Throws<Exception>(delegate { logService.LogMessage(message, It.IsAny<EventType>()); });
@@ -162,7 +160,7 @@ namespace CitiDownloaderTests.services
             string message = fixture.Generate<string>();
 
             // Execute
-            ILogService logService = new LogService(mockEventLogClient.Object, mockApplicationConfiguration.Object);
+            ILogService logService = new LogService(mockEventLogClient.Object, applicationConfiguration);
             for (int i = 0; i < itemsCount; i++)
             {
                 logService.LogMessage(fixture.Generate<string>(), fixture.Generate<EventType>());
@@ -183,14 +181,13 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            mockEventLogClient.Setup(f => f.LogMessage(It.IsAny<string>(), It.IsAny<EventLogEntryType>())).Verifiable();
             Fixture fixture = new Fixture();
             Random random = new Random();
             int itemsCount = random.Next(1, 20);
             string message = fixture.Generate<string>();
 
             // Execute
-            ILogService logService = new LogService(mockEventLogClient.Object, mockApplicationConfiguration.Object);
+            ILogService logService = new LogService(mockEventLogClient.Object, applicationConfiguration);
             for (int i = 0; i < itemsCount; i++)
             {
                 logService.LogMessage(fixture.Generate<string>(), fixture.Generate<EventType>());
@@ -214,7 +211,7 @@ namespace CitiDownloaderTests.services
             string message = fixture.Generate<string>();
 
             // Execute
-            ILogService logService = new LogService(mockEventLogClient.Object, mockApplicationConfiguration.Object);
+            ILogService logService = new LogService(mockEventLogClient.Object, applicationConfiguration);
             for (int i = 0; i < itemsCount; i++)
             {
                 logService.LogMessage(fixture.Generate<string>(), fixture.Generate<EventType>());

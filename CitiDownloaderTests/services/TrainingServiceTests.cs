@@ -1,31 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using CitiDownloader.wrappers;
-using CitiDownloader.services;
+using TrainingDownloader.wrappers;
+using TrainingDownloader.services;
 using NUnit.Framework.Constraints;
 using Moq;
 using NUnit.Framework;
 using SimpleFixture;
-using CitiDownloader.models;
+using TrainingDownloader.models;
 using System.Net;
-using CitiDownloader.configurations;
-using CitiDownloader.models.entities;
-using CitiDownloader.exceptions;
+using TrainingDownloader.configurations;
+using TrainingDownloader.models.entities;
+using TrainingDownloader.exceptions;
 
-namespace CitiDownloaderTests.services
+namespace TrainingDownloaderTests.services
 {
     [TestFixture]
     public class TrainingServiceTests
     {
-        private Mock<ICitiService> mockCitiService;
+        private Mock<IVendorService> mockCitiService;
         private Mock<ILearnerWebServices> mockLearnerWebServices;
         private Mock<ILogService> mockLogService;
         private Mock<IReportingService> mockReportingService;
-        private Mock<ApplicationConfiguration> mockApplicationConfiguration;
+        private ApplicationConfiguration applicationConfiguration;
         private Mock<IMailService> mockMailService;
         private Fixture fixture;
-        private string appConfigTestFile = "test-settings.json";
 
         public TrainingServiceTests()
         {
@@ -34,13 +33,20 @@ namespace CitiDownloaderTests.services
 
         private void SetupMocks()
         {
-            mockCitiService = new Mock<ICitiService>();
+            mockCitiService = new Mock<IVendorService>();
             mockLearnerWebServices = new Mock<ILearnerWebServices>();
             mockLogService = new Mock<ILogService>();
             mockMailService = new Mock<IMailService>();
             mockReportingService = new Mock<IReportingService>();
-            object[] args = new object[] { new string[] { "full", "upload", appConfigTestFile } };
-            mockApplicationConfiguration = new Mock<ApplicationConfiguration>(MockBehavior.Loose, args);
+            applicationConfiguration = new ApplicationConfiguration();
+        }
+
+        private VendorRecord CreateValidFakeRecord()
+        {
+            VendorRecord vendorRecord = fixture.Generate<VendorRecord>();
+            vendorRecord.Score = 80;
+            vendorRecord.PassingScore = 80;
+            return vendorRecord;
         }
 
 
@@ -49,11 +55,11 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            List<CitiRecord> fakeCitiRecords = null;
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = null;
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
@@ -69,11 +75,11 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
@@ -89,22 +95,22 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecords.Add(fakeCitiRecord);
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            VendorRecord fakeVendorRecord = CreateValidFakeRecord();
+            fakeVendorRecords.Add(fakeVendorRecord);
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             IsuImportHistory fakeIsuImportHisotry = fixture.Generate<IsuImportHistory>();
             fakeIsuImportHisotry.Id = 0;
-            mockCitiService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHisotry);
+            mockCitiService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHisotry);
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
             mockCitiService.Verify(f => f.GetRecords(), Times.Once);
-            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
             mockCitiService.VerifyNoOtherCalls();
             mockLearnerWebServices.VerifyNoOtherCalls();
             mockMailService.Verify(f => f.SendMessages(), Times.Once);
@@ -118,29 +124,29 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             Random random = new Random();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecords.Add(fakeCitiRecord);
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            VendorRecord fakeVendorRecord = CreateValidFakeRecord();
+            fakeVendorRecords.Add(fakeVendorRecord);
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             IsuImportHistory fakeIsuImportHisotry = fixture.Generate<IsuImportHistory>();
             fakeIsuImportHisotry.Id = random.Next(1,10);
-            mockCitiService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHisotry);
+            mockCitiService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHisotry);
 
             History fakeHistory = fixture.Generate<History>();
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Returns(fakeHistory);
-            mockApplicationConfiguration.SetupGet(p => p.processType).Returns(ApplicationConfiguration.ProcessType.Upload);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Returns(fakeHistory);
+            applicationConfiguration.processType = CommandLineConfiguration.ProcessType.Upload;
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
             mockCitiService.Verify(f => f.GetRecords(), Times.Once);
             mockCitiService.Verify(f => f.UploadHistoryRecords(It.IsAny<List<History>>()), Times.Once);
-            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
             mockCitiService.VerifyNoOtherCalls();
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebServices.VerifyNoOtherCalls();
             mockMailService.Verify(f => f.SendMessages(), Times.Once);
             mockMailService.VerifyNoOtherCalls();
@@ -152,29 +158,29 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             Random random = new Random();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecords.Add(fakeCitiRecord);
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            VendorRecord fakeVendorRecord = CreateValidFakeRecord();
+            fakeVendorRecords.Add(fakeVendorRecord);
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             IsuImportHistory fakeIsuImportHisotry = fixture.Generate<IsuImportHistory>();
             fakeIsuImportHisotry.Id = random.Next(1, 10);
-            mockCitiService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHisotry);
+            mockCitiService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHisotry);
 
             History fakeHistory = fixture.Generate<History>();
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Returns(fakeHistory);
-            mockApplicationConfiguration.SetupGet(p => p.processType).Returns(ApplicationConfiguration.ProcessType.Insert);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Returns(fakeHistory);
+            applicationConfiguration.processType = CommandLineConfiguration.ProcessType.Insert;
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
             mockCitiService.Verify(f => f.GetRecords(), Times.Once);
             mockCitiService.Verify(f => f.UploadHistoryRecords(It.IsAny<List<History>>()), Times.Never);
-            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
             mockCitiService.VerifyNoOtherCalls();
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebServices.VerifyNoOtherCalls();
             mockMailService.Verify(f => f.SendMessages(), Times.Once);
             mockMailService.VerifyNoOtherCalls();
@@ -186,34 +192,34 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             Random random = new Random();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecords.Add(fakeCitiRecord);
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            VendorRecord fakeVendorRecord = CreateValidFakeRecord();
+            fakeVendorRecords.Add(fakeVendorRecord);
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             IsuImportHistory fakeIsuImportHisotry = fixture.Generate<IsuImportHistory>();
             fakeIsuImportHisotry.Id = random.Next(1, 10);
-            mockCitiService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHisotry);
+            mockCitiService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHisotry);
 
             History fakeHistory1 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Returns(fakeHistory1);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Returns(fakeHistory1);
 
             History fakeHistory2 = fixture.Generate<History>();
-            mockCitiService.Setup(f => f.IsRecordVerified(fakeCitiRecord, out fakeHistory2)).Returns(true);
+            mockCitiService.Setup(f => f.IsRecordVerified(fakeVendorRecord, out fakeHistory2)).Returns(true);
 
-            mockApplicationConfiguration.SetupGet(p => p.processType).Returns(ApplicationConfiguration.ProcessType.Upload);
+            applicationConfiguration.processType = CommandLineConfiguration.ProcessType.Upload;
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
             mockCitiService.Verify(f => f.GetRecords(), Times.Once);
             mockCitiService.Verify(f => f.UploadHistoryRecords(It.IsAny<List<History>>()), Times.Once);
-            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<CitiRecord>(), out fakeHistory2), Times.Once);
+            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<VendorRecord>(), out fakeHistory2), Times.Once);
             mockCitiService.VerifyNoOtherCalls();
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebServices.VerifyNoOtherCalls();
             mockMailService.Verify(f => f.SendMessages(), Times.Once);
             mockMailService.VerifyNoOtherCalls();
@@ -225,34 +231,34 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             Random random = new Random();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecords.Add(fakeCitiRecord);
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            VendorRecord fakeVendorRecord = CreateValidFakeRecord();
+            fakeVendorRecords.Add(fakeVendorRecord);
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             IsuImportHistory fakeIsuImportHisotry = fixture.Generate<IsuImportHistory>();
             fakeIsuImportHisotry.Id = random.Next(1, 10);
-            mockCitiService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHisotry);
+            mockCitiService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHisotry);
 
             History fakeHistory1 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Returns(fakeHistory1);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Returns(fakeHistory1);
 
             History fakeHistory2 = fixture.Generate<History>();
-            mockCitiService.Setup(f => f.IsRecordVerified(fakeCitiRecord, out fakeHistory2)).Returns(true);
+            mockCitiService.Setup(f => f.IsRecordVerified(fakeVendorRecord, out fakeHistory2)).Returns(true);
 
-            mockApplicationConfiguration.SetupGet(p => p.processType).Returns(ApplicationConfiguration.ProcessType.Insert);
+            applicationConfiguration.processType = CommandLineConfiguration.ProcessType.Insert;
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
             mockCitiService.Verify(f => f.GetRecords(), Times.Once);
             mockCitiService.Verify(f => f.UploadHistoryRecords(It.IsAny<List<History>>()), Times.Never);
-            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<CitiRecord>(), out fakeHistory2), Times.Once);
+            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<VendorRecord>(), out fakeHistory2), Times.Once);
             mockCitiService.VerifyNoOtherCalls();
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebServices.VerifyNoOtherCalls();
             mockMailService.Verify(f => f.SendMessages(), Times.Once);
             mockMailService.VerifyNoOtherCalls();
@@ -264,38 +270,38 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             Random random = new Random();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecords.Add(fakeCitiRecord);
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            VendorRecord fakeVendorRecord = CreateValidFakeRecord();
+            fakeVendorRecords.Add(fakeVendorRecord);
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             IsuImportHistory fakeIsuImportHisotry = fixture.Generate<IsuImportHistory>();
             fakeIsuImportHisotry.Id = random.Next(1, 10);
-            mockCitiService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHisotry);
+            mockCitiService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHisotry);
 
             History fakeHistory1 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Returns(fakeHistory1);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Returns(fakeHistory1);
 
             History fakeHistory2 = null;
-            mockCitiService.Setup(f => f.IsRecordVerified(fakeCitiRecord, out fakeHistory2)).Returns(false);
+            mockCitiService.Setup(f => f.IsRecordVerified(fakeVendorRecord, out fakeHistory2)).Returns(false);
 
             string fakeUnivId = null;
-            mockCitiService.Setup(f => f.FindUser(fakeCitiRecord)).Returns(fakeUnivId);
+            mockCitiService.Setup(f => f.FindUser(fakeVendorRecord)).Returns(fakeUnivId);
 
-            //mockApplicationConfiguration.SetupGet(p => p.processType).Returns(ApplicationConfiguration.ProcessType.Insert);
+            //mockApplicationConfiguration.SetupGet(p => p.processType).Returns(CommandLineConfiguration.ProcessType.Insert);
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
             mockCitiService.Verify(f => f.GetRecords(), Times.Once);
             mockCitiService.Verify(f => f.UploadHistoryRecords(It.IsAny<List<History>>()), Times.Never);
-            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<CitiRecord>(), out fakeHistory2), Times.Once);
-            mockCitiService.Verify(f => f.FindUser(It.IsAny<CitiRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<VendorRecord>(), out fakeHistory2), Times.Once);
+            mockCitiService.Verify(f => f.FindUser(It.IsAny<VendorRecord>()), Times.Once);
             mockCitiService.VerifyNoOtherCalls();
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebServices.VerifyNoOtherCalls();
             mockMailService.Verify(f => f.SendMessages(), Times.Once);
             mockMailService.VerifyNoOtherCalls();
@@ -307,42 +313,42 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             Random random = new Random();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecords.Add(fakeCitiRecord);
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            VendorRecord fakeVendorRecord = CreateValidFakeRecord();
+            fakeVendorRecords.Add(fakeVendorRecord);
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             IsuImportHistory fakeIsuImportHisotry = fixture.Generate<IsuImportHistory>();
             fakeIsuImportHisotry.Id = random.Next(1, 10);
-            mockCitiService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHisotry);
+            mockCitiService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHisotry);
 
             History fakeHistory1 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Returns(fakeHistory1);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Returns(fakeHistory1);
 
             History fakeHistory2 = null;
-            mockCitiService.Setup(f => f.IsRecordVerified(fakeCitiRecord, out fakeHistory2)).Returns(false);
+            mockCitiService.Setup(f => f.IsRecordVerified(fakeVendorRecord, out fakeHistory2)).Returns(false);
 
             string fakeUnivId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindUser(fakeCitiRecord)).Returns(fakeUnivId);
+            mockCitiService.Setup(f => f.FindUser(fakeVendorRecord)).Returns(fakeUnivId);
 
             string fakeCourseId = null;
-            mockCitiService.Setup(f => f.FindCourse(fakeCitiRecord)).Returns(fakeCourseId);
+            mockCitiService.Setup(f => f.FindCourse(fakeVendorRecord)).Returns(fakeCourseId);
 
-            //mockApplicationConfiguration.SetupGet(p => p.processType).Returns(ApplicationConfiguration.ProcessType.Insert);
+            //mockApplicationConfiguration.SetupGet(p => p.processType).Returns(CommandLineConfiguration.ProcessType.Insert);
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
             mockCitiService.Verify(f => f.GetRecords(), Times.Once);
             mockCitiService.Verify(f => f.UploadHistoryRecords(It.IsAny<List<History>>()), Times.Never);
-            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<CitiRecord>(), out fakeHistory2), Times.Once);
-            mockCitiService.Verify(f => f.FindUser(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.FindCourse(It.IsAny<CitiRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<VendorRecord>(), out fakeHistory2), Times.Once);
+            mockCitiService.Verify(f => f.FindUser(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.FindCourse(It.IsAny<VendorRecord>()), Times.Once);
             mockCitiService.VerifyNoOtherCalls();
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebServices.VerifyNoOtherCalls();
             mockMailService.Verify(f => f.SendMessages(), Times.Once);
             mockMailService.VerifyNoOtherCalls();
@@ -354,46 +360,46 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             Random random = new Random();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecords.Add(fakeCitiRecord);
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            VendorRecord fakeVendorRecord = CreateValidFakeRecord();
+            fakeVendorRecords.Add(fakeVendorRecord);
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             IsuImportHistory fakeIsuImportHisotry = fixture.Generate<IsuImportHistory>();
             fakeIsuImportHisotry.Id = random.Next(1, 10);
-            mockCitiService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHisotry);
+            mockCitiService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHisotry);
 
             History fakeHistory1 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Returns(fakeHistory1);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Returns(fakeHistory1);
 
             History fakeHistory2 = null;
-            mockCitiService.Setup(f => f.IsRecordVerified(fakeCitiRecord, out fakeHistory2)).Returns(false);
+            mockCitiService.Setup(f => f.IsRecordVerified(fakeVendorRecord, out fakeHistory2)).Returns(false);
 
             string fakeUnivId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindUser(fakeCitiRecord)).Returns(fakeUnivId);
+            mockCitiService.Setup(f => f.FindUser(fakeVendorRecord)).Returns(fakeUnivId);
 
             string fakeCourseId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindCourse(fakeCitiRecord)).Returns(fakeCourseId);
+            mockCitiService.Setup(f => f.FindCourse(fakeVendorRecord)).Returns(fakeCourseId);
 
             History fakeHistory3 = fixture.Generate<History>();
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCitiIdCourseIdDate(fakeCitiRecord)).Returns(fakeHistory3);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByVendorIdCourseIdDate(fakeVendorRecord)).Returns(fakeHistory3);
 
-            mockApplicationConfiguration.SetupGet(p => p.processType).Returns(ApplicationConfiguration.ProcessType.Insert);
+            applicationConfiguration.processType = CommandLineConfiguration.ProcessType.Insert;
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
             mockCitiService.Verify(f => f.GetRecords(), Times.Once);
             mockCitiService.Verify(f => f.UploadHistoryRecords(It.IsAny<List<History>>()), Times.Never);
-            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<CitiRecord>(), out fakeHistory2), Times.Once);
-            mockCitiService.Verify(f => f.FindUser(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.FindCourse(It.IsAny<CitiRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<VendorRecord>(), out fakeHistory2), Times.Once);
+            mockCitiService.Verify(f => f.FindUser(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.FindCourse(It.IsAny<VendorRecord>()), Times.Once);
             mockCitiService.VerifyNoOtherCalls();
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCitiIdCourseIdDate(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByVendorIdCourseIdDate(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebServices.VerifyNoOtherCalls();
             mockMailService.Verify(f => f.SendMessages(), Times.Once);
             mockMailService.VerifyNoOtherCalls();
@@ -405,46 +411,46 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             Random random = new Random();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecords.Add(fakeCitiRecord);
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            VendorRecord fakeVendorRecord = CreateValidFakeRecord();
+            fakeVendorRecords.Add(fakeVendorRecord);
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             IsuImportHistory fakeIsuImportHisotry = fixture.Generate<IsuImportHistory>();
             fakeIsuImportHisotry.Id = random.Next(1, 10);
-            mockCitiService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHisotry);
+            mockCitiService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHisotry);
 
             History fakeHistory1 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Returns(fakeHistory1);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Returns(fakeHistory1);
 
             History fakeHistory2 = null;
-            mockCitiService.Setup(f => f.IsRecordVerified(fakeCitiRecord, out fakeHistory2)).Returns(false);
+            mockCitiService.Setup(f => f.IsRecordVerified(fakeVendorRecord, out fakeHistory2)).Returns(false);
 
             string fakeUnivId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindUser(fakeCitiRecord)).Returns(fakeUnivId);
+            mockCitiService.Setup(f => f.FindUser(fakeVendorRecord)).Returns(fakeUnivId);
 
             string fakeCourseId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindCourse(fakeCitiRecord)).Returns(fakeCourseId);
+            mockCitiService.Setup(f => f.FindCourse(fakeVendorRecord)).Returns(fakeCourseId);
 
             History fakeHistory3 = fixture.Generate<History>();
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCitiIdCourseIdDate(fakeCitiRecord)).Returns(fakeHistory3);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByVendorIdCourseIdDate(fakeVendorRecord)).Returns(fakeHistory3);
 
-            mockApplicationConfiguration.SetupGet(p => p.processType).Returns(ApplicationConfiguration.ProcessType.Upload);
+            applicationConfiguration.processType = CommandLineConfiguration.ProcessType.Upload;
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
             mockCitiService.Verify(f => f.GetRecords(), Times.Once);
             mockCitiService.Verify(f => f.UploadHistoryRecords(It.IsAny<List<History>>()), Times.Once);
-            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<CitiRecord>(), out fakeHistory2), Times.Once);
-            mockCitiService.Verify(f => f.FindUser(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.FindCourse(It.IsAny<CitiRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<VendorRecord>(), out fakeHistory2), Times.Once);
+            mockCitiService.Verify(f => f.FindUser(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.FindCourse(It.IsAny<VendorRecord>()), Times.Once);
             mockCitiService.VerifyNoOtherCalls();
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCitiIdCourseIdDate(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByVendorIdCourseIdDate(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebServices.VerifyNoOtherCalls();
             mockMailService.Verify(f => f.SendMessages(), Times.Once);
             mockMailService.VerifyNoOtherCalls();
@@ -456,54 +462,54 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             Random random = new Random();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecords.Add(fakeCitiRecord);
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            VendorRecord fakeVendorRecord = CreateValidFakeRecord();
+            fakeVendorRecords.Add(fakeVendorRecord);
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             IsuImportHistory fakeIsuImportHisotry = fixture.Generate<IsuImportHistory>();
             fakeIsuImportHisotry.Id = random.Next(1, 10);
-            mockCitiService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHisotry);
+            mockCitiService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHisotry);
 
             History fakeHistory1 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Returns(fakeHistory1);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Returns(fakeHistory1);
 
             History fakeHistory2 = null;
-            mockCitiService.Setup(f => f.IsRecordVerified(fakeCitiRecord, out fakeHistory2)).Returns(false);
+            mockCitiService.Setup(f => f.IsRecordVerified(fakeVendorRecord, out fakeHistory2)).Returns(false);
 
             string fakeUnivId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindUser(fakeCitiRecord)).Returns(fakeUnivId);
+            mockCitiService.Setup(f => f.FindUser(fakeVendorRecord)).Returns(fakeUnivId);
 
             string fakeCourseId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindCourse(fakeCitiRecord)).Returns(fakeCourseId);
+            mockCitiService.Setup(f => f.FindCourse(fakeVendorRecord)).Returns(fakeCourseId);
 
             History fakeHistory3 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCitiIdCourseIdDate(fakeCitiRecord)).Returns(fakeHistory3);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByVendorIdCourseIdDate(fakeVendorRecord)).Returns(fakeHistory3);
 
             History fakeHistory4 = fixture.Generate<History>();
-            mockLearnerWebServices.Setup(f => f.CreateHistoryRecord(fakeCitiRecord)).Returns(fakeHistory4);
+            mockLearnerWebServices.Setup(f => f.CreateHistoryRecord(fakeVendorRecord)).Returns(fakeHistory4);
             mockCitiService.Setup(f => f.InsertSingleHistoryRecord(fakeHistory4)).Verifiable();
             mockLearnerWebServices.Setup(f => f.SetInsertedForImportRecord(fakeIsuImportHisotry.Id)).Verifiable();
 
-            mockApplicationConfiguration.SetupGet(p => p.processType).Returns(ApplicationConfiguration.ProcessType.Upload);
+            applicationConfiguration.processType = CommandLineConfiguration.ProcessType.Upload;
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
             mockCitiService.Verify(f => f.GetRecords(), Times.Once);
             mockCitiService.Verify(f => f.UploadHistoryRecords(It.IsAny<List<History>>()), Times.Once);
-            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<CitiRecord>(), out fakeHistory2), Times.Once);
-            mockCitiService.Verify(f => f.FindUser(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.FindCourse(It.IsAny<CitiRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<VendorRecord>(), out fakeHistory2), Times.Once);
+            mockCitiService.Verify(f => f.FindUser(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.FindCourse(It.IsAny<VendorRecord>()), Times.Once);
             mockCitiService.Verify(f => f.InsertSingleHistoryRecord(It.IsAny<History>()), Times.Once);
             mockCitiService.VerifyNoOtherCalls();
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCitiIdCourseIdDate(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByVendorIdCourseIdDate(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebServices.Verify(f => f.SetInsertedForImportRecord(It.IsAny<int>()), Times.Once);
             mockLearnerWebServices.VerifyNoOtherCalls();
             mockMailService.Verify(f => f.SendMessages(), Times.Once);
@@ -518,54 +524,54 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             Random random = new Random();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecords.Add(fakeCitiRecord);
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            VendorRecord fakeVendorRecord = CreateValidFakeRecord();
+            fakeVendorRecords.Add(fakeVendorRecord);
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             IsuImportHistory fakeIsuImportHisotry = fixture.Generate<IsuImportHistory>();
             fakeIsuImportHisotry.Id = random.Next(1, 10);
-            mockCitiService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHisotry);
+            mockCitiService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHisotry);
 
             History fakeHistory1 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Returns(fakeHistory1);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Returns(fakeHistory1);
 
             History fakeHistory2 = null;
-            mockCitiService.Setup(f => f.IsRecordVerified(fakeCitiRecord, out fakeHistory2)).Returns(false);
+            mockCitiService.Setup(f => f.IsRecordVerified(fakeVendorRecord, out fakeHistory2)).Returns(false);
 
             string fakeUnivId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindUser(fakeCitiRecord)).Returns(fakeUnivId);
+            mockCitiService.Setup(f => f.FindUser(fakeVendorRecord)).Returns(fakeUnivId);
 
             string fakeCourseId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindCourse(fakeCitiRecord)).Returns(fakeCourseId);
+            mockCitiService.Setup(f => f.FindCourse(fakeVendorRecord)).Returns(fakeCourseId);
 
             History fakeHistory3 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCitiIdCourseIdDate(fakeCitiRecord)).Returns(fakeHistory3);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByVendorIdCourseIdDate(fakeVendorRecord)).Returns(fakeHistory3);
 
             History fakeHistory4 = fixture.Generate<History>();
-            mockLearnerWebServices.Setup(f => f.CreateHistoryRecord(fakeCitiRecord)).Throws(new Exception());
+            mockLearnerWebServices.Setup(f => f.CreateHistoryRecord(fakeVendorRecord)).Throws(new Exception());
             //mockCitiService.Setup(f => f.InsertSingleHistoryRecord(fakeHistory4)).Verifiable();
             //mockLearnerWebServices.Setup(f => f.SetInsertedForImportRecord(fakeIsuImportHisotry.Id)).Verifiable();
 
-            mockApplicationConfiguration.SetupGet(p => p.processType).Returns(ApplicationConfiguration.ProcessType.Upload);
+            applicationConfiguration.processType = CommandLineConfiguration.ProcessType.Upload;
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
             mockCitiService.Verify(f => f.GetRecords(), Times.Once);
             mockCitiService.Verify(f => f.UploadHistoryRecords(It.IsAny<List<History>>()), Times.Never);
-            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<CitiRecord>(), out fakeHistory2), Times.Once);
-            mockCitiService.Verify(f => f.FindUser(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.FindCourse(It.IsAny<CitiRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<VendorRecord>(), out fakeHistory2), Times.Once);
+            mockCitiService.Verify(f => f.FindUser(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.FindCourse(It.IsAny<VendorRecord>()), Times.Once);
             mockCitiService.Verify(f => f.InsertSingleHistoryRecord(It.IsAny<History>()), Times.Never);
             mockCitiService.VerifyNoOtherCalls();
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCitiIdCourseIdDate(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByVendorIdCourseIdDate(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebServices.Verify(f => f.SetInsertedForImportRecord(It.IsAny<int>()), Times.Never);
             mockLearnerWebServices.VerifyNoOtherCalls();
             mockMailService.Verify(f => f.SendMessages(), Times.Once);
@@ -582,54 +588,54 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             Random random = new Random();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecords.Add(fakeCitiRecord);
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            VendorRecord fakeVendorRecord = CreateValidFakeRecord();
+            fakeVendorRecords.Add(fakeVendorRecord);
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             IsuImportHistory fakeIsuImportHisotry = fixture.Generate<IsuImportHistory>();
             fakeIsuImportHisotry.Id = random.Next(1, 10);
-            mockCitiService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHisotry);
+            mockCitiService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHisotry);
 
             History fakeHistory1 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Returns(fakeHistory1);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Returns(fakeHistory1);
 
             History fakeHistory2 = null;
-            mockCitiService.Setup(f => f.IsRecordVerified(fakeCitiRecord, out fakeHistory2)).Returns(false);
+            mockCitiService.Setup(f => f.IsRecordVerified(fakeVendorRecord, out fakeHistory2)).Returns(false);
 
             string fakeUnivId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindUser(fakeCitiRecord)).Returns(fakeUnivId);
+            mockCitiService.Setup(f => f.FindUser(fakeVendorRecord)).Returns(fakeUnivId);
 
             string fakeCourseId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindCourse(fakeCitiRecord)).Returns(fakeCourseId);
+            mockCitiService.Setup(f => f.FindCourse(fakeVendorRecord)).Returns(fakeCourseId);
 
             History fakeHistory3 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCitiIdCourseIdDate(fakeCitiRecord)).Returns(fakeHistory3);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByVendorIdCourseIdDate(fakeVendorRecord)).Returns(fakeHistory3);
 
             History fakeHistory4 = fixture.Generate<History>();
-            mockLearnerWebServices.Setup(f => f.CreateHistoryRecord(fakeCitiRecord)).Returns(fakeHistory4);
+            mockLearnerWebServices.Setup(f => f.CreateHistoryRecord(fakeVendorRecord)).Returns(fakeHistory4);
             mockCitiService.Setup(f => f.InsertSingleHistoryRecord(fakeHistory4)).Throws(new Exception());
             //mockLearnerWebServices.Setup(f => f.SetInsertedForImportRecord(fakeIsuImportHisotry.Id)).Verifiable();
 
-            mockApplicationConfiguration.SetupGet(p => p.processType).Returns(ApplicationConfiguration.ProcessType.Upload);
+            applicationConfiguration.processType = CommandLineConfiguration.ProcessType.Upload;
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
             mockCitiService.Verify(f => f.GetRecords(), Times.Once);
             mockCitiService.Verify(f => f.UploadHistoryRecords(It.IsAny<List<History>>()), Times.Once);
-            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<CitiRecord>(), out fakeHistory2), Times.Once);
-            mockCitiService.Verify(f => f.FindUser(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.FindCourse(It.IsAny<CitiRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<VendorRecord>(), out fakeHistory2), Times.Once);
+            mockCitiService.Verify(f => f.FindUser(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.FindCourse(It.IsAny<VendorRecord>()), Times.Once);
             mockCitiService.Verify(f => f.InsertSingleHistoryRecord(It.IsAny<History>()), Times.Once);
             mockCitiService.VerifyNoOtherCalls();
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCitiIdCourseIdDate(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByVendorIdCourseIdDate(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebServices.Verify(f => f.SetInsertedForImportRecord(It.IsAny<int>()), Times.Never);
             mockLearnerWebServices.VerifyNoOtherCalls();
             mockMailService.Verify(f => f.SendMessages(), Times.Once);
@@ -646,54 +652,54 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             Random random = new Random();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecords.Add(fakeCitiRecord);
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            VendorRecord fakeVendorRecord = CreateValidFakeRecord();
+            fakeVendorRecords.Add(fakeVendorRecord);
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             IsuImportHistory fakeIsuImportHisotry = fixture.Generate<IsuImportHistory>();
             fakeIsuImportHisotry.Id = random.Next(1, 10);
-            mockCitiService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHisotry);
+            mockCitiService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHisotry);
 
             History fakeHistory1 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Returns(fakeHistory1);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Returns(fakeHistory1);
 
             History fakeHistory2 = null;
-            mockCitiService.Setup(f => f.IsRecordVerified(fakeCitiRecord, out fakeHistory2)).Returns(false);
+            mockCitiService.Setup(f => f.IsRecordVerified(fakeVendorRecord, out fakeHistory2)).Returns(false);
 
             string fakeUnivId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindUser(fakeCitiRecord)).Returns(fakeUnivId);
+            mockCitiService.Setup(f => f.FindUser(fakeVendorRecord)).Returns(fakeUnivId);
 
             string fakeCourseId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindCourse(fakeCitiRecord)).Returns(fakeCourseId);
+            mockCitiService.Setup(f => f.FindCourse(fakeVendorRecord)).Returns(fakeCourseId);
 
             History fakeHistory3 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCitiIdCourseIdDate(fakeCitiRecord)).Returns(fakeHistory3);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByVendorIdCourseIdDate(fakeVendorRecord)).Returns(fakeHistory3);
 
             History fakeHistory4 = fixture.Generate<History>();
-            mockLearnerWebServices.Setup(f => f.CreateHistoryRecord(fakeCitiRecord)).Returns(fakeHistory4);
+            mockLearnerWebServices.Setup(f => f.CreateHistoryRecord(fakeVendorRecord)).Returns(fakeHistory4);
             mockCitiService.Setup(f => f.InsertSingleHistoryRecord(fakeHistory4)).Verifiable();
             mockLearnerWebServices.Setup(f => f.SetInsertedForImportRecord(fakeIsuImportHisotry.Id)).Throws(new Exception());
 
-            mockApplicationConfiguration.SetupGet(p => p.processType).Returns(ApplicationConfiguration.ProcessType.Upload);
+            applicationConfiguration.processType = CommandLineConfiguration.ProcessType.Upload;
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
             mockCitiService.Verify(f => f.GetRecords(), Times.Once);
             mockCitiService.Verify(f => f.UploadHistoryRecords(It.IsAny<List<History>>()), Times.Once);
-            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<CitiRecord>(), out fakeHistory2), Times.Once);
-            mockCitiService.Verify(f => f.FindUser(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.FindCourse(It.IsAny<CitiRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<VendorRecord>(), out fakeHistory2), Times.Once);
+            mockCitiService.Verify(f => f.FindUser(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.FindCourse(It.IsAny<VendorRecord>()), Times.Once);
             mockCitiService.Verify(f => f.InsertSingleHistoryRecord(It.IsAny<History>()), Times.Once);
             mockCitiService.VerifyNoOtherCalls();
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCitiIdCourseIdDate(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByVendorIdCourseIdDate(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebServices.Verify(f => f.SetInsertedForImportRecord(It.IsAny<int>()), Times.Once);
             mockLearnerWebServices.VerifyNoOtherCalls();
             mockMailService.Verify(f => f.SendMessages(), Times.Once);
@@ -710,54 +716,54 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             Random random = new Random();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecords.Add(fakeCitiRecord);
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            VendorRecord fakeVendorRecord = CreateValidFakeRecord();
+            fakeVendorRecords.Add(fakeVendorRecord);
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             IsuImportHistory fakeIsuImportHisotry = fixture.Generate<IsuImportHistory>();
             fakeIsuImportHisotry.Id = random.Next(1, 10);
-            mockCitiService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHisotry);
+            mockCitiService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHisotry);
 
             History fakeHistory1 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Returns(fakeHistory1);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Returns(fakeHistory1);
 
             History fakeHistory2 = null;
-            mockCitiService.Setup(f => f.IsRecordVerified(fakeCitiRecord, out fakeHistory2)).Returns(false);
+            mockCitiService.Setup(f => f.IsRecordVerified(fakeVendorRecord, out fakeHistory2)).Returns(false);
 
             string fakeUnivId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindUser(fakeCitiRecord)).Returns(fakeUnivId);
+            mockCitiService.Setup(f => f.FindUser(fakeVendorRecord)).Returns(fakeUnivId);
 
             string fakeCourseId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindCourse(fakeCitiRecord)).Returns(fakeCourseId);
+            mockCitiService.Setup(f => f.FindCourse(fakeVendorRecord)).Returns(fakeCourseId);
 
             History fakeHistory3 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCitiIdCourseIdDate(fakeCitiRecord)).Returns(fakeHistory3);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByVendorIdCourseIdDate(fakeVendorRecord)).Returns(fakeHistory3);
 
             History fakeHistory4 = fixture.Generate<History>();
-            mockLearnerWebServices.Setup(f => f.CreateHistoryRecord(fakeCitiRecord)).Returns(fakeHistory4);
+            mockLearnerWebServices.Setup(f => f.CreateHistoryRecord(fakeVendorRecord)).Returns(fakeHistory4);
             mockCitiService.Setup(f => f.InsertSingleHistoryRecord(fakeHistory4)).Verifiable();
             mockLearnerWebServices.Setup(f => f.SetInsertedForImportRecord(fakeIsuImportHisotry.Id)).Verifiable();
 
-            mockApplicationConfiguration.SetupGet(p => p.processType).Returns(ApplicationConfiguration.ProcessType.Insert);
+            applicationConfiguration.processType = CommandLineConfiguration.ProcessType.Insert;
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
             mockCitiService.Verify(f => f.GetRecords(), Times.Once);
             mockCitiService.Verify(f => f.UploadHistoryRecords(It.IsAny<List<History>>()), Times.Never);
-            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<CitiRecord>(), out fakeHistory2), Times.Once);
-            mockCitiService.Verify(f => f.FindUser(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.FindCourse(It.IsAny<CitiRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<VendorRecord>(), out fakeHistory2), Times.Once);
+            mockCitiService.Verify(f => f.FindUser(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.FindCourse(It.IsAny<VendorRecord>()), Times.Once);
             mockCitiService.Verify(f => f.InsertSingleHistoryRecord(It.IsAny<History>()), Times.Once);
             mockCitiService.VerifyNoOtherCalls();
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCitiIdCourseIdDate(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByVendorIdCourseIdDate(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebServices.Verify(f => f.SetInsertedForImportRecord(It.IsAny<int>()), Times.Once);
             mockLearnerWebServices.VerifyNoOtherCalls();
             mockMailService.Verify(f => f.SendMessages(), Times.Once);
@@ -772,56 +778,56 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             Random random = new Random();
-            List<CitiRecord> fakeCitiRecords = new List<CitiRecord>();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
-            fakeCitiRecords.Add(fakeCitiRecord);
-            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeCitiRecords);
+            List<VendorRecord> fakeVendorRecords = new List<VendorRecord>();
+            VendorRecord fakeVendorRecord = CreateValidFakeRecord();
+            fakeVendorRecords.Add(fakeVendorRecord);
+            mockCitiService.Setup(f => f.GetRecords()).Returns(fakeVendorRecords);
 
             IsuImportHistory fakeIsuImportHisotry = fixture.Generate<IsuImportHistory>();
             fakeIsuImportHisotry.Id = random.Next(1, 10);
-            mockCitiService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHisotry);
+            mockCitiService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHisotry);
 
             History fakeHistory1 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Returns(fakeHistory1);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Returns(fakeHistory1);
 
             History fakeHistory2 = null;
-            mockCitiService.Setup(f => f.IsRecordVerified(fakeCitiRecord, out fakeHistory2)).Returns(false);
+            mockCitiService.Setup(f => f.IsRecordVerified(fakeVendorRecord, out fakeHistory2)).Returns(false);
 
             string fakeUnivId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindUser(fakeCitiRecord)).Returns(fakeUnivId);
+            mockCitiService.Setup(f => f.FindUser(fakeVendorRecord)).Returns(fakeUnivId);
 
             string fakeCourseId = fixture.Generate<string>();
-            mockCitiService.Setup(f => f.FindCourse(fakeCitiRecord)).Returns(fakeCourseId);
+            mockCitiService.Setup(f => f.FindCourse(fakeVendorRecord)).Returns(fakeCourseId);
 
             History fakeHistory3 = null;
-            mockLearnerWebServices.Setup(f => f.GetHistoryByCitiIdCourseIdDate(fakeCitiRecord)).Returns(fakeHistory3);
+            mockLearnerWebServices.Setup(f => f.GetHistoryByVendorIdCourseIdDate(fakeVendorRecord)).Returns(fakeHistory3);
 
             History fakeHistory4 = fixture.Generate<History>();
-            mockLearnerWebServices.Setup(f => f.CreateHistoryRecord(fakeCitiRecord)).Returns(fakeHistory4);
+            mockLearnerWebServices.Setup(f => f.CreateHistoryRecord(fakeVendorRecord)).Returns(fakeHistory4);
             mockCitiService.Setup(f => f.InsertSingleHistoryRecord(fakeHistory4)).Verifiable();
             mockLearnerWebServices.Setup(f => f.SetInsertedForImportRecord(fakeIsuImportHisotry.Id)).Verifiable();
 
             mockMailService.Setup(f => f.SendMessages()).Throws(new SendMailException("test"));
 
-            mockApplicationConfiguration.SetupGet(p => p.processType).Returns(ApplicationConfiguration.ProcessType.Insert);
+            applicationConfiguration.processType = CommandLineConfiguration.ProcessType.Insert;
 
             // Execute
-            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, mockApplicationConfiguration.Object, mockMailService.Object);
+            ITrainingService trainingService = new TrainingService(mockCitiService.Object, mockLearnerWebServices.Object, mockLogService.Object, mockReportingService.Object, applicationConfiguration, mockMailService.Object);
             trainingService.ProcessRecords();
 
             // Verify
             mockCitiService.Verify(f => f.GetRecords(), Times.Once);
             mockCitiService.Verify(f => f.UploadHistoryRecords(It.IsAny<List<History>>()), Times.Never);
-            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<CitiRecord>(), out fakeHistory2), Times.Once);
-            mockCitiService.Verify(f => f.FindUser(It.IsAny<CitiRecord>()), Times.Once);
-            mockCitiService.Verify(f => f.FindCourse(It.IsAny<CitiRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.IsRecordVerified(It.IsAny<VendorRecord>(), out fakeHistory2), Times.Once);
+            mockCitiService.Verify(f => f.FindUser(It.IsAny<VendorRecord>()), Times.Once);
+            mockCitiService.Verify(f => f.FindCourse(It.IsAny<VendorRecord>()), Times.Once);
             mockCitiService.Verify(f => f.InsertSingleHistoryRecord(It.IsAny<History>()), Times.Once);
             mockCitiService.VerifyNoOtherCalls();
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.GetHistoryByCitiIdCourseIdDate(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.GetHistoryByVendorIdCourseIdDate(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebServices.Verify(f => f.CreateHistoryRecord(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebServices.Verify(f => f.SetInsertedForImportRecord(It.IsAny<int>()), Times.Once);
             mockLearnerWebServices.VerifyNoOtherCalls();
             mockMailService.Verify(f => f.SendMessages(), Times.Once);

@@ -4,35 +4,43 @@ using System.Text;
 using Moq;
 using SimpleFixture;
 using NUnit.Framework;
-using CitiDownloader.configurations;
-using CitiDownloader.exceptions;
-using CitiDownloader.models.entities;
+using TrainingDownloader.configurations;
+using TrainingDownloader.exceptions;
+using TrainingDownloader.models.entities;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
-using CitiDownloader.repositories;
+using TrainingDownloader.repositories;
+using TrainingDownloader.models;
 
-namespace CitiDownloaderTests.repositories
+namespace TrainingDownloaderTests.repositories
 {
     [TestFixture]
     public class LearnerWebRepositoryTests
     {
         private Mock<LWEBIAStateContext> mockDb { get; set; }
+        private ApplicationConfiguration mockConfig { get; set; }
         private Fixture fixture = new Fixture();
 
         private List<IsuImportHistory> fakeIsuImportHistory { get; set; }
         private List<IsuCitiLwLearners> fakeIsuCitiLwLearners { get; set; }
-        private List<IsuCitiLwCourses> fakeIsuCitiLwCourses { get; set; }
+        private List<IsuAalasLwLearners> fakeIsuAalasLwLearners { get; set; }
+        private List<IsuVendorCourses> fakeIsuCitiLwCourses { get; set; }
         private List<Learners> fakeLearners { get; set; }
         private List<Courses> fakeCourses { get; set; }
         private List<History> fakeHistory { get; set; }
 
-        public LearnerWebRepositoryTests()
+        private void SetupMocks()
         {
-            //SetupDbSets();
+            mockConfig = new ApplicationConfiguration
+            {
+                applicationType = CommandLineConfiguration.ApplicationType.Citi
+            };
+
         }
 
         private void SetupIsuImportHistory()
         {
+            SetupMocks();
             mockDb = new Mock<LWEBIAStateContext>();
             fakeIsuImportHistory = new List<IsuImportHistory>();
             for (int i = 0; i < 5; i++)
@@ -51,16 +59,21 @@ namespace CitiDownloaderTests.repositories
 
             mockDb.Setup(f => f.IsuImportHistory).Returns(mockIsuImportHistorySet.Object);
             mockDb.Setup(f => f.IsuCitiLwLearners).Returns(SetupEmptyIsuCitiLwLearners().Object);
+            mockDb.Setup(f => f.IsuAalasLwLearners).Returns(SetupEmptyIsuAalasLwLearners().Object);
         }
 
         private void SetupIsuCitiLwLearners()
         {
+            SetupMocks();
             mockDb = new Mock<LWEBIAStateContext>();
             fakeIsuCitiLwLearners = new List<IsuCitiLwLearners>();
+            fakeIsuAalasLwLearners = new List<IsuAalasLwLearners>();
+            
 
             for (int i = 0; i < 5; i++)
             {
                 fakeIsuCitiLwLearners.Add(fixture.Generate<IsuCitiLwLearners>());
+                fakeIsuAalasLwLearners.Add(fixture.Generate<IsuAalasLwLearners>());
             }
 
             var mockIsuCitiLwLearnersSet = new Mock<DbSet<IsuCitiLwLearners>>();
@@ -72,34 +85,47 @@ namespace CitiDownloaderTests.repositories
             mockIsuCitiLwLearnersSet.Setup(f => f.Add(It.IsAny<IsuCitiLwLearners>())).Callback((IsuCitiLwLearners input) => fakeIsuCitiLwLearners.Add(input));
             mockIsuCitiLwLearnersSet.Setup(f => f.Update(It.IsAny<IsuCitiLwLearners>())).Callback((IsuCitiLwLearners input) => fakeIsuCitiLwLearners[fakeIsuCitiLwLearners.FindIndex(i => i.CitiLearnerId == input.CitiLearnerId)] = input);
 
+            var mockIsuAalasLwLearnersSet = new Mock<DbSet<IsuAalasLwLearners>>();
+            mockIsuAalasLwLearnersSet.As<IQueryable<IsuAalasLwLearners>>().Setup(m => m.Provider).Returns(fakeIsuAalasLwLearners.AsQueryable().Provider);
+            mockIsuAalasLwLearnersSet.As<IQueryable<IsuAalasLwLearners>>().Setup(m => m.Expression).Returns(fakeIsuAalasLwLearners.AsQueryable().Expression);
+            mockIsuAalasLwLearnersSet.As<IQueryable<IsuAalasLwLearners>>().Setup(m => m.ElementType).Returns(fakeIsuAalasLwLearners.AsQueryable().ElementType);
+            mockIsuAalasLwLearnersSet.As<IQueryable<IsuAalasLwLearners>>().Setup(m => m.GetEnumerator()).Returns(fakeIsuAalasLwLearners.AsQueryable().GetEnumerator());
+            mockIsuAalasLwLearnersSet.Setup(f => f.Find(It.IsAny<string>())).Returns((object[] input) => fakeIsuAalasLwLearners.SingleOrDefault(x => x.AalasLearnerId == Convert.ToString(input[0])));
+            mockIsuAalasLwLearnersSet.Setup(f => f.Add(It.IsAny<IsuAalasLwLearners>())).Callback((IsuAalasLwLearners input) => fakeIsuAalasLwLearners.Add(input));
+            mockIsuAalasLwLearnersSet.Setup(f => f.Update(It.IsAny<IsuAalasLwLearners>())).Callback((IsuAalasLwLearners input) => fakeIsuAalasLwLearners[fakeIsuAalasLwLearners.FindIndex(i => i.AalasLearnerId == input.AalasLearnerId)] = input);
+
             mockDb.Setup(f => f.IsuCitiLwLearners).Returns(mockIsuCitiLwLearnersSet.Object);
+            mockDb.Setup(f => f.IsuAalasLwLearners).Returns(mockIsuAalasLwLearnersSet.Object);
             mockDb.Setup(f => f.IsuImportHistory).Returns(SetupEmptyIsuImportHistory().Object);
         }
 
         private void SetupIsuCitiLwCourses()
         {
+            SetupMocks();
             mockDb = new Mock<LWEBIAStateContext>();
-            fakeIsuCitiLwCourses = new List<IsuCitiLwCourses>();
+            fakeIsuCitiLwCourses = new List<IsuVendorCourses>();
 
             for (int i = 0; i < 5; i++)
             {
-                fakeIsuCitiLwCourses.Add(fixture.Generate<IsuCitiLwCourses>());
+                fakeIsuCitiLwCourses.Add(fixture.Generate<IsuVendorCourses>());
             }
 
-            var mockIsuCitiLwCoursesSet = new Mock<DbSet<IsuCitiLwCourses>>();
-            mockIsuCitiLwCoursesSet.As<IQueryable<IsuCitiLwCourses>>().Setup(m => m.Provider).Returns(fakeIsuCitiLwCourses.AsQueryable().Provider);
-            mockIsuCitiLwCoursesSet.As<IQueryable<IsuCitiLwCourses>>().Setup(m => m.Expression).Returns(fakeIsuCitiLwCourses.AsQueryable().Expression);
-            mockIsuCitiLwCoursesSet.As<IQueryable<IsuCitiLwCourses>>().Setup(m => m.ElementType).Returns(fakeIsuCitiLwCourses.AsQueryable().ElementType);
-            mockIsuCitiLwCoursesSet.As<IQueryable<IsuCitiLwCourses>>().Setup(m => m.GetEnumerator()).Returns(fakeIsuCitiLwCourses.AsQueryable().GetEnumerator());
-            mockIsuCitiLwCoursesSet.Setup(f => f.Add(It.IsAny<IsuCitiLwCourses>())).Callback((IsuCitiLwCourses input) => fakeIsuCitiLwCourses.Add(input));
+            var mockIsuCitiLwCoursesSet = new Mock<DbSet<IsuVendorCourses>>();
+            mockIsuCitiLwCoursesSet.As<IQueryable<IsuVendorCourses>>().Setup(m => m.Provider).Returns(fakeIsuCitiLwCourses.AsQueryable().Provider);
+            mockIsuCitiLwCoursesSet.As<IQueryable<IsuVendorCourses>>().Setup(m => m.Expression).Returns(fakeIsuCitiLwCourses.AsQueryable().Expression);
+            mockIsuCitiLwCoursesSet.As<IQueryable<IsuVendorCourses>>().Setup(m => m.ElementType).Returns(fakeIsuCitiLwCourses.AsQueryable().ElementType);
+            mockIsuCitiLwCoursesSet.As<IQueryable<IsuVendorCourses>>().Setup(m => m.GetEnumerator()).Returns(fakeIsuCitiLwCourses.AsQueryable().GetEnumerator());
+            mockIsuCitiLwCoursesSet.Setup(f => f.Add(It.IsAny<IsuVendorCourses>())).Callback((IsuVendorCourses input) => fakeIsuCitiLwCourses.Add(input));
 
             mockDb.Setup(f => f.IsuCitiLwCourses).Returns(mockIsuCitiLwCoursesSet.Object);
             mockDb.Setup(f => f.IsuCitiLwLearners).Returns(SetupEmptyIsuCitiLwLearners().Object);
+            mockDb.Setup(f => f.IsuAalasLwLearners).Returns(SetupEmptyIsuAalasLwLearners().Object);
             mockDb.Setup(f => f.IsuImportHistory).Returns(SetupEmptyIsuImportHistory().Object);
         }
 
         private void SetupLearners()
         {
+            SetupMocks();
             mockDb = new Mock<LWEBIAStateContext>();
             fakeLearners = new List<Learners>();
 
@@ -117,11 +143,13 @@ namespace CitiDownloaderTests.repositories
 
             mockDb.Setup(f => f.Learners).Returns(mockLearnersSet.Object);
             mockDb.Setup(f => f.IsuCitiLwLearners).Returns(SetupEmptyIsuCitiLwLearners().Object);
+            mockDb.Setup(f => f.IsuAalasLwLearners).Returns(SetupEmptyIsuAalasLwLearners().Object);
             mockDb.Setup(f => f.IsuImportHistory).Returns(SetupEmptyIsuImportHistory().Object);
         }
 
         private void SetupCourses()
         {
+            SetupMocks();
             mockDb = new Mock<LWEBIAStateContext>();
             fakeCourses = new List<Courses>();
 
@@ -143,6 +171,7 @@ namespace CitiDownloaderTests.repositories
 
         private void SetupHistory()
         {
+            SetupMocks();
             mockDb = new Mock<LWEBIAStateContext>();
             fakeHistory = new List<History>();
 
@@ -176,6 +205,18 @@ namespace CitiDownloaderTests.repositories
             return mockIsuCitiLwLearnersSet;
         }
 
+        private Mock<DbSet<IsuAalasLwLearners>> SetupEmptyIsuAalasLwLearners()
+        {
+            var mockIsuCitiLwLearnersSet = new Mock<DbSet<IsuAalasLwLearners>>();
+            fakeIsuCitiLwLearners = new List<IsuCitiLwLearners>();
+            mockIsuCitiLwLearnersSet.As<IQueryable<IsuCitiLwLearners>>().Setup(m => m.Provider).Returns(fakeIsuCitiLwLearners.AsQueryable().Provider);
+            mockIsuCitiLwLearnersSet.As<IQueryable<IsuCitiLwLearners>>().Setup(m => m.Expression).Returns(fakeIsuCitiLwLearners.AsQueryable().Expression);
+            mockIsuCitiLwLearnersSet.As<IQueryable<IsuCitiLwLearners>>().Setup(m => m.ElementType).Returns(fakeIsuCitiLwLearners.AsQueryable().ElementType);
+            mockIsuCitiLwLearnersSet.As<IQueryable<IsuCitiLwLearners>>().Setup(m => m.GetEnumerator()).Returns(fakeIsuCitiLwLearners.AsQueryable().GetEnumerator());
+
+            return mockIsuCitiLwLearnersSet;
+        }
+
         private Mock<DbSet<IsuImportHistory>> SetupEmptyIsuImportHistory()
         {
             var mockIsuImportHistorySet = new Mock<DbSet<IsuImportHistory>>();
@@ -196,7 +237,7 @@ namespace CitiDownloaderTests.repositories
             IsuImportHistory testRecord = fakeIsuImportHistory[0];
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
             IsuImportHistory response = learnerWebRepository.InsertAppTrainingRecordHistory(testRecord);
 
             // Verify
@@ -211,7 +252,7 @@ namespace CitiDownloaderTests.repositories
             IsuImportHistory testRecord = fixture.Generate<IsuImportHistory>();
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
             IsuImportHistory response = learnerWebRepository.InsertAppTrainingRecordHistory(testRecord);
 
             // Verify
@@ -230,8 +271,8 @@ namespace CitiDownloaderTests.repositories
             updatedLearner.User4 = newUser4;
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
-            learnerWebRepository.UpdateCitiIdToLearner(updatedLearner);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
+            learnerWebRepository.UpdateVendorIdToLearner(updatedLearner);
 
             // Verify
             Assert.That(fakeLearners[0].User4 == newUser4);
@@ -242,10 +283,10 @@ namespace CitiDownloaderTests.repositories
         {
             // Setup
             SetupIsuCitiLwCourses();
-            IsuCitiLwCourses fakeCourse = fixture.Generate<IsuCitiLwCourses>();
+            IsuVendorCourses fakeCourse = fixture.Generate<IsuVendorCourses>();
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
             int response = learnerWebRepository.InsertCourse(fakeCourse);
 
             // Verify
@@ -262,7 +303,7 @@ namespace CitiDownloaderTests.repositories
             History history = fixture.Generate<History>();
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
             int response = learnerWebRepository.InsertTrainingRecord(history);
 
             // Verify
@@ -281,7 +322,7 @@ namespace CitiDownloaderTests.repositories
             IsuImportHistory isuImportHistory = fakeIsuImportHistory[0];
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
             IsuImportHistory response = learnerWebRepository.SetInsertedForImportRecord(isuImportHistory.Id);
 
             // Verify
@@ -300,7 +341,7 @@ namespace CitiDownloaderTests.repositories
             IsuImportHistory history = fakeIsuImportHistory[0];
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
             learnerWebRepository.UpdateAppTrainingRecordIsInserted(history);
 
             // Verify
@@ -316,7 +357,7 @@ namespace CitiDownloaderTests.repositories
             int id = testRecord.CurriculaId;
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
             History response = learnerWebRepository.GetHistoryRecordByCurriculaId(id);
 
             // Verify
@@ -331,8 +372,8 @@ namespace CitiDownloaderTests.repositories
             string citiId = fakeIsuCitiLwLearners[0].CitiLearnerId;
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
-            IsuCitiLwLearners response = learnerWebRepository.GetIsuCitiLwLearner(citiId);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
+            VendorUser response = learnerWebRepository.GetVendorUser(citiId);
 
             // Verify
             Assert.That(response == fakeIsuCitiLwLearners[0]);
@@ -346,7 +387,7 @@ namespace CitiDownloaderTests.repositories
             string email = fakeLearners[0].Email;
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
             Learners response = learnerWebRepository.GetLearnerByEmail(email);
 
             // Verify
@@ -361,7 +402,7 @@ namespace CitiDownloaderTests.repositories
             string netId = fakeLearners[0].UserId;
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
             Learners response = learnerWebRepository.GetLearnerByNetId(netId);
 
             // Verify
@@ -369,15 +410,31 @@ namespace CitiDownloaderTests.repositories
         }
        
         [Test]
-        public void GetLearnerByCitiIdTest()
+        public void GetLearnerByCitiVendorIdTest()
         {
             // Setup
             SetupLearners();
             string citiId = fakeLearners[0].User4;
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
-            Learners response = learnerWebRepository.GetLearnerByCitiId(citiId);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
+            Learners response = learnerWebRepository.GetLearnerByVendorId(citiId);
+
+            // Verify
+            Assert.That(response == fakeLearners[0]);
+        }
+
+        [Test]
+        public void GetLearnerByAalasVendorIdTest()
+        {
+            // Setup
+            SetupLearners();
+            string aalasId = fakeLearners[0].User6;
+            mockConfig.applicationType = CommandLineConfiguration.ApplicationType.Aalas;
+
+            // Execute
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
+            Learners response = learnerWebRepository.GetLearnerByVendorId(aalasId);
 
             // Verify
             Assert.That(response == fakeLearners[0]);
@@ -391,8 +448,8 @@ namespace CitiDownloaderTests.repositories
             string citiCourseId = fakeCourses[0].User2;
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
-            Courses response = learnerWebRepository.GetCourseByCitiCourseId(citiCourseId);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
+            Courses response = learnerWebRepository.GetCourseByVendorCourseId(citiCourseId);
 
             // Verify
             Assert.That(response == fakeCourses[0]);
@@ -403,12 +460,12 @@ namespace CitiDownloaderTests.repositories
         {
             // Setup
             SetupIsuImportHistory();
-            string citiId = fakeIsuImportHistory[0].CitiId;
-            string citiCourseId = fakeIsuImportHistory[0].CitiCourseId;
+            string citiId = fakeIsuImportHistory[0].VendorUserId;
+            string citiCourseId = fakeIsuImportHistory[0].VendorCourseId;
             DateTime dateTime = fakeIsuImportHistory[0].CompletionDate;
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
             IsuImportHistory response = learnerWebRepository.GetImportHistory(citiId, citiCourseId, dateTime);
 
             // Verify
@@ -416,9 +473,27 @@ namespace CitiDownloaderTests.repositories
         }
 
         [Test]
-        public void UpdateOrInsertIsuCitiLwLearnerUpdateTest()
+        public void GetImportHistoryNullTest()
         {
             // Setup
+            SetupIsuImportHistory();
+            string citiId = fakeIsuImportHistory[0].VendorUserId;
+            string citiCourseId = fakeIsuImportHistory[0].VendorCourseId;
+            DateTime dateTime = DateTime.Now;
+
+            // Execute
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
+            IsuImportHistory response = learnerWebRepository.GetImportHistory(citiId, citiCourseId, dateTime);
+
+            // Verify
+            Assert.That(response == null);
+        }
+
+        [Test]
+        public void UpdateOrInsertVendorUserUpdateTest()
+        {
+            // Setup
+            SetupMocks();
             SetupIsuCitiLwLearners();
             bool newValid = false;
             string newLwLearnerId = "MyTestLwLearnerId";
@@ -429,8 +504,8 @@ namespace CitiDownloaderTests.repositories
             learner.DateUpdated = newDateTime;
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
-            learnerWebRepository.UpdateOrInsertISUCitiLwLearner(learner);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
+            learnerWebRepository.UpdateOrInsertVendorUser(learner);
 
             // Verify
             Assert.That(fakeIsuCitiLwLearners[0].Valid == newValid);
@@ -439,18 +514,59 @@ namespace CitiDownloaderTests.repositories
         }
 
         [Test]
-        public void UpdateOrInsertIsuCitiLwLearnerInsertTest()
+        public void UpdateOrInsertVendorUserInsertTest()
         {
             // Setup
             SetupIsuCitiLwLearners();
             IsuCitiLwLearners newLearner = fixture.Generate<IsuCitiLwLearners>();
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
-            learnerWebRepository.UpdateOrInsertISUCitiLwLearner(newLearner);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
+            learnerWebRepository.UpdateOrInsertVendorUser(newLearner);
 
             // Verify
             Assert.That(fakeIsuCitiLwLearners[fakeIsuCitiLwLearners.Count - 1] == newLearner);
+        }
+
+        [Test]
+        public void UpdateOrInsertAalasVendorUserUpdateTest()
+        {
+            // Setup
+            SetupMocks();
+            SetupIsuCitiLwLearners();
+            bool newValid = false;
+            string newLwLearnerId = "MyTestLwLearnerId";
+            DateTime newDateTime = DateTime.Now.AddYears(-10);
+            IsuAalasLwLearners learner = fakeIsuAalasLwLearners[0];
+            learner.Valid = newValid;
+            learner.LwLearnerId = newLwLearnerId;
+            learner.DateUpdated = newDateTime;
+            mockConfig.applicationType = CommandLineConfiguration.ApplicationType.Aalas;
+
+            // Execute
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
+            learnerWebRepository.UpdateOrInsertVendorUser(learner);
+
+            // Verify
+            Assert.That(fakeIsuAalasLwLearners[0].Valid == newValid);
+            Assert.That(fakeIsuAalasLwLearners[0].LwLearnerId == newLwLearnerId);
+            Assert.That(fakeIsuAalasLwLearners[0].DateUpdated != newDateTime);
+        }
+
+        [Test]
+        public void UpdateOrInsertAalasVendorUserInsertTest()
+        {
+            // Setup
+            SetupIsuCitiLwLearners();
+            IsuAalasLwLearners newLearner = fixture.Generate<IsuAalasLwLearners>();
+            mockConfig.applicationType = CommandLineConfiguration.ApplicationType.Aalas;
+
+            // Execute
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
+            learnerWebRepository.UpdateOrInsertVendorUser(newLearner);
+
+            // Verify
+            Assert.That(fakeIsuAalasLwLearners[fakeIsuAalasLwLearners.Count - 1] == newLearner);
         }
 
         [Test]
@@ -463,7 +579,7 @@ namespace CitiDownloaderTests.repositories
             DateTime dateTime = fakeHistory[0].StatusDate.Value;
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
             History response = learnerWebRepository.GetHistoryRecordByLearnerCourseDate(univId, courseId, dateTime);
 
             // Verify
@@ -480,7 +596,7 @@ namespace CitiDownloaderTests.repositories
             isuImportHistory.CurriculaId = curriculaId;
 
             // Execute
-            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object);
+            ILearnerWebRepository learnerWebRepository = new LearnerWebRepository(mockDb.Object,mockConfig);
             learnerWebRepository.UpdateImportHistoryWithCurriculaId(isuImportHistory);
 
             // Verify

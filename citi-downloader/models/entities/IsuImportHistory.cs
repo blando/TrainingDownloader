@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CitiDownloader.models.entities
+namespace TrainingDownloader.models.entities
 {
     public partial class IsuImportHistory
     {
         public int Id { get; set; }
-        public string CitiId { get; set; }
+        public string VendorUserId { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string EmailAddress { get; set; }
@@ -20,7 +20,7 @@ namespace CitiDownloader.models.entities
         public int? PassingScore { get; set; }
         public DateTime? ExpirationDate { get; set; }
         public string GroupName { get; set; }
-        public string CitiCourseId { get; set; }
+        public string VendorCourseId { get; set; }
         public string Name { get; set; }
         public string UserName { get; set; }
         public string InstitutionalEmailAddress { get; set; }

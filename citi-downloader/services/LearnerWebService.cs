@@ -1,60 +1,64 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using CitiDownloader.exceptions;
-using CitiDownloader.models;
-using CitiDownloader.models.entities;
-using CitiDownloader.repositories;
+using TrainingDownloader.exceptions;
+using TrainingDownloader.models;
+using TrainingDownloader.models.entities;
+using TrainingDownloader.repositories;
 using System.Linq;
 using ISULogger;
+using TrainingDownloader.configurations;
+using TrainingDownloader.services.interfaces;
 
-namespace CitiDownloader.services
+namespace TrainingDownloader.services
 {
     public class LearnerWebService : ILearnerWebServices
     {
         private ILearnerWebRepository learnerWebRepository;
+        private IVendorUserService vendorUserService;
 
-        public LearnerWebService(ILearnerWebRepository learnerWebRepository)
+        public LearnerWebService(ILearnerWebRepository learnerWebRepository, IVendorUserService vendorUserService)
         {
             this.learnerWebRepository = learnerWebRepository;
+            this.vendorUserService = vendorUserService;
         }
 
-        public History CreateHistoryRecord(CitiRecord citiRecord)
+        public History CreateHistoryRecord(VendorRecord vRecord)
         {
 
 
             History history = new History
             {
-                LearnerId = citiRecord.UnivId,
-                CourseId = citiRecord.CourseId,
-                Title = citiRecord.CourseName,
+                LearnerId = vRecord.UnivId,
+                CourseId = vRecord.LearnerWebCourseId,
+                Title = vRecord.VendorCourseName,
                 Status = "f",
-                EnrollmentDate = citiRecord.RegistrationDate,
-                Score = citiRecord.Score,
+                EnrollmentDate = vRecord.RegistrationDate,
+                Score = vRecord.Score,
                 CompletionStatusId = "R",
-                StatusDate = citiRecord.CompletionDate,
-                DateExpires = citiRecord.ExpirationDate,
-                PassingScore = citiRecord.PassingScore,
-                DateTimeStamp = citiRecord.GetDateTimeStamp()
+                StatusDate = vRecord.CompletionDate,
+                DateExpires = vRecord.ExpirationDate,
+                PassingScore = vRecord.PassingScore,
+                DateTimeStamp = vRecord.GetDateTimeStamp()
             };
-            history.SetImportId(citiRecord.ID);
+            history.SetImportId(vRecord.ID);
             return history;
         }
 
-        public string FindCourseId(CitiRecord citiRecord)
+        public string FindCourseId(VendorRecord vRecord)
         {
-            Courses course = learnerWebRepository.GetCourseByCitiCourseId(citiRecord.CitiCourseId);
+            Courses course = learnerWebRepository.GetCourseByVendorCourseId(vRecord.VendorCourseId);
             string CourseId = course != null ? course.CourseId : null;
             if (string.IsNullOrEmpty(CourseId))
             {
-                learnerWebRepository.InsertCourse(new IsuCitiLwCourses
+                learnerWebRepository.InsertCourse(new IsuVendorCourses
                 {
-                    CitiCourseId = citiRecord.CitiCourseId,
+                    VendorCourseId = vRecord.VendorCourseId,
                     Source = 1,
                     DateCreated = DateTime.Now,
                     DateUpdated = DateTime.Now
                 });
-                throw new UnknownCourseException(string.Format("Unknown course {0}", citiRecord.CitiCourseId));
+                throw new UnknownCourseException(string.Format("Unknown course {0}", vRecord.VendorCourseId));
             }
             else
             {
@@ -62,59 +66,52 @@ namespace CitiDownloader.services
             }
         }
 
-        public string FindUser(CitiRecord citiRecord)
+        public string FindUser(VendorRecord vRecord)
         {
-            Learners learner = learnerWebRepository.GetLearnerByCitiId(citiRecord.CitiId);
-            string univId = learner != null ? learner.LearnerId : null;
-            if (string.IsNullOrEmpty(univId))
+            Learners learner = learnerWebRepository.GetLearnerByVendorId(vRecord.VendorUserId);
+            vRecord.UnivId = learner != null ? learner.LearnerId : null;
+            if (string.IsNullOrEmpty(vRecord.UnivId))
             {
-                if (IsValid(citiRecord))
+                if (IsValid(vRecord))
                 {
-                    if (!string.IsNullOrEmpty(citiRecord.NetId))
+                    if (!string.IsNullOrEmpty(vRecord.NetId))
                     {
-                        learner = learnerWebRepository.GetLearnerByNetId(citiRecord.NetId);
-                        univId = learner != null ? learner.LearnerId : null;
+                        learner = learnerWebRepository.GetLearnerByNetId(vRecord.NetId);
+                        vRecord.UnivId = learner != null ? learner.LearnerId : null;
                     }
 
-                    if (string.IsNullOrEmpty(univId))
+                    if (string.IsNullOrEmpty(vRecord.UnivId))
                     {
-                        learner = learnerWebRepository.GetLearnerByEmail(citiRecord.EmailAddress);
-                        univId = learner != null ? learner.LearnerId : null;
+                        learner = learnerWebRepository.GetLearnerByEmail(vRecord.EmailAddress);
+                        vRecord.UnivId = learner != null ? learner.LearnerId : null;
 
-                        if (string.IsNullOrEmpty(univId))
+                        if (string.IsNullOrEmpty(vRecord.UnivId))
                         {
-                            throw new UnknownUserException(string.Format("Unable to find user: CitiId={0}, EmailAddress={1}", citiRecord.ID, citiRecord.EmailAddress));
+                            throw new UnknownUserException(string.Format("Unable to find user: CitiId={0}, EmailAddress={1}", vRecord.ID, vRecord.EmailAddress));
                         }
                     }
                 }
                 else
                 {
-                    throw new InvalidUserException(string.Format("User is set as invalid: CitiId={0}, EmailAddress={1}", citiRecord.ID, citiRecord.EmailAddress));
+                    throw new InvalidUserException(string.Format("User is set as invalid: CitiId={0}, EmailAddress={1}", vRecord.ID, vRecord.EmailAddress));
                 }
             }
 
-            if (!string.IsNullOrEmpty(univId))
+            if (!string.IsNullOrEmpty(vRecord.UnivId))
             {
-                learnerWebRepository.UpdateOrInsertISUCitiLwLearner(new IsuCitiLwLearners
-                {
-                    LwLearnerId = univId,
-                    Valid = true,
-                    CitiLastName = citiRecord.LastName,
-                    CitiLearnerId = citiRecord.CitiId,
-                    DateUpdated = DateTime.Now,
-                    DateCreated = DateTime.Now
-                });
+                VendorUser vendorUser = vendorUserService.CreateVendorUser(vRecord);
+                learnerWebRepository.UpdateOrInsertVendorUser(vendorUser);
             }
 
-            return univId;
+            return vRecord.UnivId;
         }
 
-        public History GetHistoryByCitiIdCourseIdDate(CitiRecord citiRecord)
+        public History GetHistoryByVendorIdCourseIdDate(VendorRecord vRecord)
         {
-            History history = learnerWebRepository.GetHistoryRecordByLearnerCourseDate(citiRecord.UnivId, citiRecord.CourseId, citiRecord.GetCompletionDate());
+            History history = learnerWebRepository.GetHistoryRecordByLearnerCourseDate(vRecord.UnivId, vRecord.LearnerWebCourseId, vRecord.GetCompletionDate());
             if (history != null)
             {
-                IsuImportHistory isuImportHistory = learnerWebRepository.GetImportHistory(citiRecord.CitiId, citiRecord.CitiCourseId, citiRecord.GetCompletionDate());
+                IsuImportHistory isuImportHistory = learnerWebRepository.GetImportHistory(vRecord.VendorUserId, vRecord.VendorCourseId, vRecord.GetCompletionDate());
                 isuImportHistory.CurriculaId = history.CurriculaId;
                 learnerWebRepository.UpdateImportHistoryWithCurriculaId(isuImportHistory);
             }
@@ -122,9 +119,9 @@ namespace CitiDownloader.services
             return history;
         }
 
-        public History GetHistoryByCurriculaId(CitiRecord citiRecord)
+        public History GetHistoryByCurriculaId(VendorRecord vRecord)
         {
-            IsuImportHistory isuImportHistory = learnerWebRepository.GetImportHistory(citiRecord.CitiId, citiRecord.CitiCourseId, citiRecord.GetCompletionDate());
+            IsuImportHistory isuImportHistory = learnerWebRepository.GetImportHistory(vRecord.VendorUserId, vRecord.VendorCourseId, vRecord.GetCompletionDate());
             if (isuImportHistory == null || !isuImportHistory.CurriculaId.HasValue)
             {
                 return null;
@@ -157,31 +154,30 @@ namespace CitiDownloader.services
             return learnerWebRepository.SetInsertedForImportRecord(id);
         }
 
-        public IsuImportHistory InsertImportHistory(CitiRecord citiRecord)
+        public IsuImportHistory InsertImportHistory(VendorRecord vRecord)
         {
             IsuImportHistory isuImportHistory = new IsuImportHistory
             {
-                CitiId = citiRecord.CitiId,
-                FirstName = citiRecord.FirstName,
-                LastName = citiRecord.LastName,
-                EmailAddress = citiRecord.EmailAddress,
-                RegistrationDate = citiRecord.RegistrationDate,
-                CourseName = citiRecord.CourseName,
-                StageNumber = byte.Parse(citiRecord.StageNumber.ToString()),
-                StageDescription = citiRecord.StageDescription,
-                CompletionReportNum = citiRecord.CompletionReportNum,
-                CompletionDate = citiRecord.GetCompletionDate(),
-                Score = citiRecord.Score,
-                PassingScore = citiRecord.PassingScore,
-                ExpirationDate = citiRecord.ExpirationDate,
-                GroupName = citiRecord.Group,
-                CitiCourseId = citiRecord.GroupId,
-                Name = citiRecord.Name,
-                UserName = citiRecord.UserName,
-                InstitutionalEmailAddress = citiRecord.InstitutionalEmailAddress,
-                EmployeeNumber = citiRecord.EmployeeNumber,
-                Verified = citiRecord.Verified,
-                IsValid = citiRecord.IsValid,
+                VendorUserId = vRecord.VendorUserId,
+                FirstName = vRecord.FirstName,
+                LastName = vRecord.LastName,
+                EmailAddress = vRecord.EmailAddress,
+                RegistrationDate = vRecord.RegistrationDate,
+                CourseName = vRecord.VendorCourseName,
+                StageNumber = vRecord.StageNumber == null ? (byte?)null : byte.Parse(vRecord.StageNumber.ToString()),
+                StageDescription = vRecord.StageDescription,
+                CompletionReportNum = vRecord.CompletionReportNum,
+                CompletionDate = vRecord.GetCompletionDate(),
+                Score = vRecord.Score,
+                PassingScore = vRecord.PassingScore,
+                ExpirationDate = vRecord.ExpirationDate,
+                VendorCourseId = vRecord.VendorCourseId,
+                Name = vRecord.Name,
+                UserName = vRecord.UserName,
+                InstitutionalEmailAddress = vRecord.InstitutionalEmailAddress,
+                EmployeeNumber = vRecord.EmployeeNumber,
+                Verified = vRecord.Verified,
+                IsValid = vRecord.IsValid,
                 Inserted = false,
                 Source = 1
             };
@@ -189,19 +185,19 @@ namespace CitiDownloader.services
             return learnerWebRepository.InsertAppTrainingRecordHistory(isuImportHistory);
         }
 
-        public bool IsValid(CitiRecord citiRecord)
+        public bool IsValid(VendorRecord vRecord)
         {
-            IsuCitiLwLearners isuCitiLwLearners = learnerWebRepository.GetIsuCitiLwLearner(citiRecord.CitiId);
-            if (isuCitiLwLearners == null || !isuCitiLwLearners.Valid.HasValue)
+            VendorUser vendorUser = learnerWebRepository.GetVendorUser(vRecord.VendorUserId);
+            if (vendorUser == null || !vendorUser.Valid.HasValue)
             {
                 return true;
             }
-            return isuCitiLwLearners.Valid.Value;
+            return vendorUser.Valid.Value;
         }
 
-        public bool IsVerified(CitiRecord citiRecord)
+        public bool IsVerified(VendorRecord vRecord)
         {
-            IsuImportHistory isuImportHistory = learnerWebRepository.GetImportHistory(citiRecord.CitiId, citiRecord.GroupId, citiRecord.GetCompletionDate());
+            IsuImportHistory isuImportHistory = learnerWebRepository.GetImportHistory(vRecord.VendorUserId, vRecord.VendorCourseId, vRecord.GetCompletionDate());
 
             if (isuImportHistory == null || !isuImportHistory.Verified.HasValue)
             {
@@ -210,9 +206,9 @@ namespace CitiDownloader.services
             return isuImportHistory.Verified.Value;
         }
 
-        public void UpdateImportHistoryWithCurriculaId(CitiRecord citiRecord, History history)
+        public void UpdateImportHistoryWithCurriculaId(VendorRecord vRecord, History history)
         {
-            IsuImportHistory isuImportHistory = learnerWebRepository.GetImportHistory(citiRecord.CitiId, citiRecord.GroupId, citiRecord.GetCompletionDate());
+            IsuImportHistory isuImportHistory = learnerWebRepository.GetImportHistory(vRecord.VendorUserId, vRecord.VendorCourseId, vRecord.GetCompletionDate());
             isuImportHistory.CurriculaId = history.CurriculaId;
             learnerWebRepository.UpdateImportHistoryWithCurriculaId(isuImportHistory);
         }

@@ -1,14 +1,14 @@
-﻿using CitiDownloader.models;
+﻿using TrainingDownloader.models;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CitiDownloader.services
+namespace TrainingDownloader.services
 {
     public interface IReportingService
     {
-        void ReportUnknownUser(CitiRecord citiRecord, List<string> messages);
-        void ReportUnknownCourse(CitiRecord citiRecord, List<string> messages);
+        void ReportUnknownUser(VendorRecord vRecord, List<string> messages);
+        void ReportUnknownCourse(VendorRecord vRecord, List<string> messages);
         void ReportSystemError(SystemError systemError, List<string> messages);
         List<ReportMessage> GetUnknownUsers();
         List<ReportMessage> GetUnknownCourses();

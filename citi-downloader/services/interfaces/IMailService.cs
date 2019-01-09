@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CitiDownloader.services
+namespace TrainingDownloader.services
 {
     public interface IMailService
     {

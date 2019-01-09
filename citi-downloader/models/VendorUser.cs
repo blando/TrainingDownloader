@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 
-namespace CitiDownloader.models.entities
+namespace TrainingDownloader.models
 {
-    public partial class IsuCitiLwLearners
+    public abstract class VendorUser
     {
         public string LwLearnerId { get; set; }
-        public string CitiLearnerId { get; set; }
-        public string CitiLastName { get; set; }
+        public abstract string GetVendorLearnerId();
+        public abstract string GetVendorLastName();
         public DateTime DateCreated { get; set; }
         public DateTime DateUpdated { get; set; }
         public bool? Valid { get; set; }

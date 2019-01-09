@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CitiDownloader.exceptions
+namespace TrainingDownloader.exceptions
 {
     public class SendMailException : Exception
     {

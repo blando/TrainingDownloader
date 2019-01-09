@@ -1,16 +1,17 @@
-﻿using CitiDownloader.exceptions;
-using CitiDownloader.models.entities;
-using CitiDownloader.repositories;
-using CitiDownloader.services;
-using CitiDownloader.wrappers;
+﻿using TrainingDownloader.exceptions;
+using TrainingDownloader.models.entities;
+using TrainingDownloader.repositories;
+using TrainingDownloader.services;
+using TrainingDownloader.wrappers;
 using ISULogger;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
-using CitiDownloader.configurations;
+using TrainingDownloader.configurations;
+using TrainingDownloader.services.interfaces;
 
-namespace CitiDownloader
+namespace TrainingDownloader
 {
     class Program
     {
@@ -18,10 +19,12 @@ namespace CitiDownloader
         static void Main(string[] args)
         {
 
+            CommandLineConfiguration config = new CommandLineConfiguration(args);
+
             var serviceProvider = new ServiceCollection()
-                .AddSingleton<ICitiDownloadService, CitiDownloadService>()
+                .AddSingleton<IVendorDownloadService, VendorDownloadService>()
                 .AddSingleton<IWebClientWrapper, WebClientWrapper>()
-                .AddSingleton<ICitiService, CitiService>()
+                .AddSingleton<IVendorService, VendorService>()
                 .AddSingleton<ILearnerWebServices, LearnerWebService>()
                 .AddSingleton<ITrainingService, TrainingService>()
                 .AddSingleton<ICsvClient, CsvClient>()
@@ -32,13 +35,16 @@ namespace CitiDownloader
                 .AddSingleton<IMailService, MailService>()
                 .AddSingleton<IMailClient, MailClient>()
                 .AddSingleton<IEventLogClient, EventLogClient>()
+                .AddSingleton<IVendorUserService, VendorUserService>()
+                .AddSingleton<IFolderCleanupService, FolderCleanupService>()
+                .AddSingleton(config.applicationConfiguration)
                 .AddDbContext<LWEBIAStateContext>()
-                .AddTransient<ApplicationConfiguration>(s => new AppConfig(args))
                 .BuildServiceProvider();
 
-            ITrainingService trainingService = serviceProvider.GetService<ITrainingService>();
-
-            trainingService.ProcessRecords();
+            // Process Training Records
+            serviceProvider.GetService<ITrainingService>().ProcessRecords();
+            // Cleanup Download Folder
+            serviceProvider.GetService<IFolderCleanupService>().CleanUpDataDirectory();
         }
 
     }

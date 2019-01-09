@@ -1,13 +1,13 @@
-﻿using CitiDownloader.models;
-using CitiDownloader.wrappers;
+﻿using TrainingDownloader.models;
+using TrainingDownloader.wrappers;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using HtmlTags;
-using CitiDownloader.configurations;
+using TrainingDownloader.configurations;
 
-namespace CitiDownloader.services
+namespace TrainingDownloader.services
 {
     public class MailService : IMailService
     {
@@ -37,14 +37,14 @@ namespace CitiDownloader.services
                     if (courses.Any())
                     {
                         TableTag table = new TableTag();
-                        table.AddHeaderRow(CitiRecord.GetTableHeaderRow());
+                        table.AddHeaderRow(VendorRecord.GetTableHeaderRow());
 
                         body.Append("<p><h4>Missing Courses</h4>The following courses are unknown and need to be setup in LearnerWeb and tied to the Citi-Course-Id.</p>");
 
                         foreach (ReportMessage reportMessage in courses)
                         {
-                            CitiRecord citiRecord = reportMessage.attachedObject as CitiRecord;
-                            table.AddBodyRow(citiRecord.ToTableRow());
+                            VendorRecord vendorRecord = reportMessage.attachedObject as VendorRecord;
+                            table.AddBodyRow(vendorRecord.ToTableRow());
                         }
                         body.Append(table.ToHtmlString());
                     }
@@ -54,12 +54,12 @@ namespace CitiDownloader.services
                         body.Append("<p><h4>Missing Users</h4>The following users are unknown and need to be setup in LearnerWeb and tied to the Citi-Id.</p>");
            
                         TableTag table = new TableTag();
-                        table.AddHeaderRow(CitiRecord.GetTableHeaderRow());
+                        table.AddHeaderRow(VendorRecord.GetTableHeaderRow());
 
                         foreach (ReportMessage reportMessage in courses)
                         {
-                            CitiRecord citiRecord = reportMessage.attachedObject as CitiRecord;
-                            table.AddBodyRow(citiRecord.ToTableRow());
+                            VendorRecord vendorRecord = reportMessage.attachedObject as VendorRecord;
+                            table.AddBodyRow(vendorRecord.ToTableRow());
                         }
                         body.Append(table.ToHtmlString());
                     }

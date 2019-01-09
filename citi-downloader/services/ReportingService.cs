@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
-using CitiDownloader.models;
+using TrainingDownloader.models;
 
-namespace CitiDownloader.services
+namespace TrainingDownloader.services
 {
     public class ReportingService : IReportingService
     {
@@ -53,20 +53,20 @@ namespace CitiDownloader.services
 
         }
 
-        public void ReportUnknownCourse(CitiRecord citiRecord, List<string> messages)
+        public void ReportUnknownCourse(VendorRecord vRecord, List<string> messages)
         {
             UnknownCourseMessages.Add(new ReportMessage
             {
-                attachedObject = citiRecord,
+                attachedObject = vRecord,
                 messages = messages
             });
         }
 
-        public void ReportUnknownUser(CitiRecord citiRecord, List<string> messages)
+        public void ReportUnknownUser(VendorRecord vRecord, List<string> messages)
         {
             UnknownUserMessages.Add(new ReportMessage
             {
-                attachedObject = citiRecord,
+                attachedObject = vRecord,
                 messages = messages
             });
         }

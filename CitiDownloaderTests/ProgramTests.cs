@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CitiDownloaderTests
+namespace TrainingDownloaderTests
 {
     [TestFixture]
     public class ProgramTests

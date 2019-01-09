@@ -1,13 +1,13 @@
-﻿using CitiDownloader.models;
+﻿using TrainingDownloader.models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using CitiDownloader.configurations;
+using TrainingDownloader.configurations;
 
-namespace CitiDownloader.wrappers
+namespace TrainingDownloader.wrappers
 {
     public class EventLogClient : IEventLogClient
     {

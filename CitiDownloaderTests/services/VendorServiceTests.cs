@@ -1,39 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using CitiDownloader.wrappers;
-using CitiDownloader.services;
+using TrainingDownloader.wrappers;
+using TrainingDownloader.services;
 using NUnit.Framework.Constraints;
 using Moq;
 using NUnit.Framework;
 using SimpleFixture;
-using CitiDownloader.models;
+using TrainingDownloader.models;
 using System.Net;
-using CitiDownloader.models.entities;
-using static CitiDownloader.services.LogService;
-using CitiDownloader.exceptions;
+using TrainingDownloader.models.entities;
+using static TrainingDownloader.services.LogService;
+using TrainingDownloader.exceptions;
+using System.Linq;
 
-namespace CitiDownloaderTests.services
+namespace TrainingDownloaderTests.services
 {
     [TestFixture]
-    public class CitiServiceTests
+    public class vendorServiceTests
     {
-        private Fixture fixture;
-        private Mock<ICitiDownloadService> mockCitiDownloadService;
-        private Mock<ICsvClient> mockCsvClient;
-        private Mock<ILearnerWebServices> mockLearnerWebService;
-        private Mock<ILogService> mockLogService;
-        private Mock<IReportingService> mockReportingService;
-        private Mock<ISftpClient> mockSftpClient;
+        private Fixture fixture { get; set; }
+        private Mock<IVendorDownloadService> mockVendorDownloadService { get; set; }
+        private Mock<ICsvClient> mockCsvClient { get; set; }
+        private Mock<ILearnerWebServices> mockLearnerWebService { get; set; }
+        private Mock<ILogService> mockLogService { get; set; }
+        private Mock<IReportingService> mockReportingService { get; set; }
+        private Mock<ISftpClient> mockSftpClient { get; set; }
 
-        public CitiServiceTests()
+        public vendorServiceTests()
         {
             this.fixture = new Fixture();
         }
 
         private void SetupMocks()
         {
-            mockCitiDownloadService = new Mock<ICitiDownloadService>();
+            mockVendorDownloadService = new Mock<IVendorDownloadService>();
             mockCsvClient = new Mock<ICsvClient>();
             mockLearnerWebService = new Mock<ILearnerWebServices>();
             mockLogService = new Mock<ILogService>();
@@ -47,18 +48,18 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             string returnFile = fixture.Generate<string>();
-            List<CitiRecord> returnCitiRecords = fixture.Generate<List<CitiRecord>>();
-            mockCitiDownloadService.Setup(f => f.DownloadFile()).Returns(returnFile);
-            mockCsvClient.Setup(f => f.GetCitiRecords(returnFile)).Returns(returnCitiRecords);
+            List<VendorRecord> returnVendorRecords = fixture.Generate<List<VendorRecord>>();
+            mockVendorDownloadService.Setup(f => f.DownloadFile()).Returns(returnFile);
+            mockCsvClient.Setup(f => f.GetVendorRecords(returnFile)).Returns(returnVendorRecords);
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            List<CitiRecord> response = citiService.GetRecords();
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            List<VendorRecord> response = vendorService.GetRecords();
 
             // Verify
-            Assert.That(response == returnCitiRecords);
-            mockCitiDownloadService.Verify(f => f.DownloadFile(), Times.Once);
-            mockCsvClient.Verify(f => f.GetCitiRecords(It.IsAny<string>()), Times.Once);
+            Assert.That(response == returnVendorRecords);
+            mockVendorDownloadService.Verify(f => f.DownloadFile(), Times.Once);
+            mockCsvClient.Verify(f => f.GetVendorRecords(It.IsAny<string>()), Times.Once);
         }
 
         [Test]
@@ -67,19 +68,19 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             string returnFile = fixture.Generate<string>();
-            List<CitiRecord> returnCitiRecords = fixture.Generate<List<CitiRecord>>();
-            mockCitiDownloadService.Setup(f => f.DownloadFile()).Throws(new WebException());
-            mockCsvClient.Setup(f => f.GetCitiRecords(returnFile)).Returns(returnCitiRecords);
+            List<VendorRecord> returnVendorRecords = fixture.Generate<List<VendorRecord>>();
+            mockVendorDownloadService.Setup(f => f.DownloadFile()).Throws(new WebException());
+            mockCsvClient.Setup(f => f.GetVendorRecords(returnFile)).Returns(returnVendorRecords);
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            List<CitiRecord> response = citiService.GetRecords();
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            List<VendorRecord> response = vendorService.GetRecords();
 
             // Verify
             Assert.That(response == null);
-            mockCitiDownloadService.Verify(f => f.DownloadFile(), Times.Once);
-            mockCitiDownloadService.VerifyNoOtherCalls();
-            mockCsvClient.Verify(f => f.GetCitiRecords(It.IsAny<string>()), Times.Never);
+            mockVendorDownloadService.Verify(f => f.DownloadFile(), Times.Once);
+            mockVendorDownloadService.VerifyNoOtherCalls();
+            mockCsvClient.Verify(f => f.GetVendorRecords(It.IsAny<string>()), Times.Never);
             mockCsvClient.VerifyNoOtherCalls();
             mockLogService.Verify(f => f.LogMessage(It.IsAny<string>(), It.IsAny<EventType>()), Times.Exactly(2));
             mockLogService.Verify(f => f.GetCacheAndFlush(), Times.Once);
@@ -94,19 +95,19 @@ namespace CitiDownloaderTests.services
             // Setup
             SetupMocks();
             string returnFile = fixture.Generate<string>();
-            List<CitiRecord> returnCitiRecords = fixture.Generate<List<CitiRecord>>();
-            mockCitiDownloadService.Setup(f => f.DownloadFile()).Throws(new Exception());
-            mockCsvClient.Setup(f => f.GetCitiRecords(returnFile)).Returns(returnCitiRecords);
+            List<VendorRecord> returnVendorRecords = fixture.Generate<List<VendorRecord>>();
+            mockVendorDownloadService.Setup(f => f.DownloadFile()).Throws(new Exception());
+            mockCsvClient.Setup(f => f.GetVendorRecords(returnFile)).Returns(returnVendorRecords);
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            List<CitiRecord> response = citiService.GetRecords();
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            List<VendorRecord> response = vendorService.GetRecords();
 
             // Verify
             Assert.That(response == null);
-            mockCitiDownloadService.Verify(f => f.DownloadFile(), Times.Once);
-            mockCitiDownloadService.VerifyNoOtherCalls();
-            mockCsvClient.Verify(f => f.GetCitiRecords(It.IsAny<string>()), Times.Never);
+            mockVendorDownloadService.Verify(f => f.DownloadFile(), Times.Once);
+            mockVendorDownloadService.VerifyNoOtherCalls();
+            mockCsvClient.Verify(f => f.GetVendorRecords(It.IsAny<string>()), Times.Never);
             mockCsvClient.VerifyNoOtherCalls();
             mockLogService.Verify(f => f.LogMessage(It.IsAny<string>(), It.IsAny<EventType>()), Times.Exactly(2));
             mockLogService.Verify(f => f.GetCacheAndFlush(), Times.Once);
@@ -126,8 +127,8 @@ namespace CitiDownloaderTests.services
             mockLearnerWebService.Setup(f => f.InsertHistory(fakeHistory, out insertedResponse)).Returns(responseCurriculaId);
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            citiService.InsertSingleHistoryRecord(fakeHistory);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            vendorService.InsertSingleHistoryRecord(fakeHistory);
 
             // Verify
             mockLearnerWebService.Verify(f => f.InsertHistory(It.IsAny<History>(), out insertedResponse), Times.Once);
@@ -145,8 +146,8 @@ namespace CitiDownloaderTests.services
             mockLearnerWebService.Setup(f => f.InsertHistory(fakeHistory, out insertedResponse)).Returns(responseCurriculaId);
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            citiService.InsertSingleHistoryRecord(fakeHistory);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            vendorService.InsertSingleHistoryRecord(fakeHistory);
 
             // Verify
             mockLearnerWebService.Verify(f => f.InsertHistory(It.IsAny<History>(), out insertedResponse), Times.Once);
@@ -164,8 +165,8 @@ namespace CitiDownloaderTests.services
             mockLearnerWebService.Setup(f => f.InsertHistory(fakeHistory, out insertedResponse)).Throws(new Exception());
 
             // Execute & Verify
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            Assert.Throws<Exception>(delegate { citiService.InsertSingleHistoryRecord(fakeHistory); });
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            Assert.Throws<Exception>(delegate { vendorService.InsertSingleHistoryRecord(fakeHistory); });
 
             // Verify
             mockLearnerWebService.Verify(f => f.InsertHistory(It.IsAny<History>(), out insertedResponse), Times.Once);
@@ -177,17 +178,17 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            VendorRecord fakeVendorRecord = fixture.Generate<VendorRecord>();
             string fakeUnivId = fixture.Generate<string>();
-            mockLearnerWebService.Setup(f => f.FindUser(fakeCitiRecord)).Returns(fakeUnivId);
+            mockLearnerWebService.Setup(f => f.FindUser(fakeVendorRecord)).Returns(fakeUnivId);
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            string response = citiService.FindUser(fakeCitiRecord);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            string response = vendorService.FindUser(fakeVendorRecord);
 
             // Verify
             Assert.That(response == fakeUnivId);
-            mockLearnerWebService.Verify(f => f.FindUser(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebService.Verify(f => f.FindUser(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebService.VerifyNoOtherCalls();
         }
 
@@ -196,17 +197,17 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            VendorRecord fakeVendorRecord = fixture.Generate<VendorRecord>();
             string fakeUnivId = fixture.Generate<string>();
-            mockLearnerWebService.Setup(f => f.FindUser(fakeCitiRecord)).Throws(new InvalidUserException("test"));
+            mockLearnerWebService.Setup(f => f.FindUser(fakeVendorRecord)).Throws(new InvalidUserException("test"));
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            string response = citiService.FindUser(fakeCitiRecord);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            string response = vendorService.FindUser(fakeVendorRecord);
 
             // Verify
             Assert.That(response == null);
-            mockLearnerWebService.Verify(f => f.FindUser(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebService.Verify(f => f.FindUser(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebService.VerifyNoOtherCalls();
             mockLogService.Verify(f => f.LogMessage(It.IsAny<string>(), It.IsAny<EventType>()), Times.Once);
             mockLogService.VerifyNoOtherCalls();
@@ -217,19 +218,19 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            VendorRecord fakeVendorRecord = fixture.Generate<VendorRecord>();
             string fakeUnivId = fixture.Generate<string>();
-            mockLearnerWebService.Setup(f => f.FindUser(fakeCitiRecord)).Throws(new UnknownUserException("test"));
+            mockLearnerWebService.Setup(f => f.FindUser(fakeVendorRecord)).Throws(new UnknownUserException("test"));
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            string response = citiService.FindUser(fakeCitiRecord);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            string response = vendorService.FindUser(fakeVendorRecord);
 
             // Verify
             Assert.That(response == null);
-            mockLearnerWebService.Verify(f => f.FindUser(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebService.Verify(f => f.FindUser(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebService.VerifyNoOtherCalls();
-            mockReportingService.Verify(f => f.ReportUnknownUser(It.IsAny<CitiRecord>(), It.IsAny<List<string>>()), Times.Once);
+            mockReportingService.Verify(f => f.ReportUnknownUser(It.IsAny<VendorRecord>(), It.IsAny<List<string>>()), Times.Once);
             mockReportingService.VerifyNoOtherCalls();
             mockLogService.Verify(f => f.LogMessage(It.IsAny<string>(), It.IsAny<EventType>()), Times.Once);
             mockLogService.Verify(f => f.GetCacheAndFlush(), Times.Once);
@@ -241,17 +242,17 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            VendorRecord fakeVendorRecord = fixture.Generate<VendorRecord>();
             string fakeUnivId = fixture.Generate<string>();
-            mockLearnerWebService.Setup(f => f.FindUser(fakeCitiRecord)).Throws(new Exception());
+            mockLearnerWebService.Setup(f => f.FindUser(fakeVendorRecord)).Throws(new Exception());
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            string response = citiService.FindUser(fakeCitiRecord);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            string response = vendorService.FindUser(fakeVendorRecord);
 
             // Verify
             Assert.That(response == null);
-            mockLearnerWebService.Verify(f => f.FindUser(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebService.Verify(f => f.FindUser(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebService.VerifyNoOtherCalls();
             mockReportingService.Verify(f => f.ReportSystemError(It.IsAny<SystemError>(), It.IsAny<List<string>>()), Times.Once);
             mockReportingService.VerifyNoOtherCalls();
@@ -265,17 +266,17 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            VendorRecord fakeVendorRecord = fixture.Generate<VendorRecord>();
             IsuImportHistory fakeIsuImportHistory = fixture.Generate<IsuImportHistory>();
-            mockLearnerWebService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Returns(fakeIsuImportHistory);
+            mockLearnerWebService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Returns(fakeIsuImportHistory);
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            IsuImportHistory response = citiService.InsertImportHistory(fakeCitiRecord);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            IsuImportHistory response = vendorService.InsertImportHistory(fakeVendorRecord);
 
             // Verify
             Assert.That(response == fakeIsuImportHistory);
-            mockLearnerWebService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebService.VerifyNoOtherCalls();
             mockLogService.VerifyNoOtherCalls();
             mockReportingService.VerifyNoOtherCalls();
@@ -286,17 +287,17 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            VendorRecord fakeVendorRecord = fixture.Generate<VendorRecord>();
             IsuImportHistory fakeIsuImportHistory = fixture.Generate<IsuImportHistory>();
-            mockLearnerWebService.Setup(f => f.InsertImportHistory(fakeCitiRecord)).Throws(new Exception());
+            mockLearnerWebService.Setup(f => f.InsertImportHistory(fakeVendorRecord)).Throws(new Exception());
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            IsuImportHistory response = citiService.InsertImportHistory(fakeCitiRecord);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            IsuImportHistory response = vendorService.InsertImportHistory(fakeVendorRecord);
 
             // Verify
             Assert.That(response == null);
-            mockLearnerWebService.Verify(f => f.InsertImportHistory(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebService.Verify(f => f.InsertImportHistory(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebService.VerifyNoOtherCalls();
             mockLogService.Verify(f => f.LogMessage(It.IsAny<string>(), It.IsAny<EventType>()), Times.Once);
             mockLogService.Verify(f => f.GetCacheAndFlush(), Times.Once);
@@ -310,20 +311,20 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            VendorRecord fakeVendorRecord = fixture.Generate<VendorRecord>();
             History outHistory = fixture.Generate<History>();
-            mockLearnerWebService.Setup(f => f.IsVerified(fakeCitiRecord)).Returns(true);
-            mockLearnerWebService.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Returns(outHistory);
+            mockLearnerWebService.Setup(f => f.IsVerified(fakeVendorRecord)).Returns(true);
+            mockLearnerWebService.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Returns(outHistory);
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            bool response = citiService.IsRecordVerified(fakeCitiRecord, out History responseHistory);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            bool response = vendorService.IsRecordVerified(fakeVendorRecord, out History responseHistory);
 
             // Verify
             Assert.That(response == true);
             Assert.That(responseHistory == outHistory);
-            mockLearnerWebService.Verify(f => f.IsVerified(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebService.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebService.Verify(f => f.IsVerified(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebService.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebService.VerifyNoOtherCalls();
             mockLogService.Verify(f => f.LogMessage(It.IsAny<string>(), It.IsAny<EventType>()), Times.Once);
             mockLogService.Verify(f => f.GetCacheAndFlush(), Times.Never);
@@ -338,19 +339,19 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            VendorRecord fakeVendorRecord = fixture.Generate<VendorRecord>();
             History outHistory = fixture.Generate<History>();
-            mockLearnerWebService.Setup(f => f.IsVerified(fakeCitiRecord)).Returns(false);
+            mockLearnerWebService.Setup(f => f.IsVerified(fakeVendorRecord)).Returns(false);
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            bool response = citiService.IsRecordVerified(fakeCitiRecord, out History responseHistory);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            bool response = vendorService.IsRecordVerified(fakeVendorRecord, out History responseHistory);
 
             // Verify
             Assert.That(response == false);
             Assert.That(responseHistory == null);
-            mockLearnerWebService.Verify(f => f.IsVerified(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebService.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Never);
+            mockLearnerWebService.Verify(f => f.IsVerified(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebService.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Never);
             mockLearnerWebService.VerifyNoOtherCalls();
             mockLogService.Verify(f => f.LogMessage(It.IsAny<string>(), It.IsAny<EventType>()), Times.Never);
             mockLogService.Verify(f => f.GetCacheAndFlush(), Times.Never);
@@ -365,19 +366,19 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            VendorRecord fakeVendorRecord = fixture.Generate<VendorRecord>();
             History outHistory = fixture.Generate<History>();
-            mockLearnerWebService.Setup(f => f.IsVerified(fakeCitiRecord)).Throws(new Exception());
+            mockLearnerWebService.Setup(f => f.IsVerified(fakeVendorRecord)).Throws(new Exception());
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            bool response = citiService.IsRecordVerified(fakeCitiRecord, out History responseHistory);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            bool response = vendorService.IsRecordVerified(fakeVendorRecord, out History responseHistory);
 
             // Verify
             Assert.That(response == false);
             Assert.That(responseHistory == null);
-            mockLearnerWebService.Verify(f => f.IsVerified(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebService.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Never);
+            mockLearnerWebService.Verify(f => f.IsVerified(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebService.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Never);
             mockLearnerWebService.VerifyNoOtherCalls();
             mockLogService.Verify(f => f.LogMessage(It.IsAny<string>(), It.IsAny<EventType>()), Times.Once);
             mockLogService.Verify(f => f.GetCacheAndFlush(), Times.Once);
@@ -392,20 +393,20 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            VendorRecord fakeVendorRecord = fixture.Generate<VendorRecord>();
             History outHistory = fixture.Generate<History>();
-            mockLearnerWebService.Setup(f => f.IsVerified(fakeCitiRecord)).Returns(true);
-            mockLearnerWebService.Setup(f => f.GetHistoryByCurriculaId(fakeCitiRecord)).Throws(new Exception());
+            mockLearnerWebService.Setup(f => f.IsVerified(fakeVendorRecord)).Returns(true);
+            mockLearnerWebService.Setup(f => f.GetHistoryByCurriculaId(fakeVendorRecord)).Throws(new Exception());
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            bool response = citiService.IsRecordVerified(fakeCitiRecord, out History responseHistory);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            bool response = vendorService.IsRecordVerified(fakeVendorRecord, out History responseHistory);
 
             // Verify
             Assert.That(response == false);
             Assert.That(responseHistory == null);
-            mockLearnerWebService.Verify(f => f.IsVerified(It.IsAny<CitiRecord>()), Times.Once);
-            mockLearnerWebService.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebService.Verify(f => f.IsVerified(It.IsAny<VendorRecord>()), Times.Once);
+            mockLearnerWebService.Verify(f => f.GetHistoryByCurriculaId(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebService.VerifyNoOtherCalls();
             mockLogService.Verify(f => f.LogMessage(It.IsAny<string>(), It.IsAny<EventType>()), Times.Exactly(2));
             mockLogService.Verify(f => f.GetCacheAndFlush(), Times.Once);
@@ -420,17 +421,17 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            VendorRecord fakeVendorRecord = fixture.Generate<VendorRecord>();
             string fakeCourseId = fixture.Generate<string>();
-            mockLearnerWebService.Setup(f => f.FindCourseId(fakeCitiRecord)).Returns(fakeCourseId);
+            mockLearnerWebService.Setup(f => f.FindCourseId(fakeVendorRecord)).Returns(fakeCourseId);
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            string response = citiService.FindCourse(fakeCitiRecord);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            string response = vendorService.FindCourse(fakeVendorRecord);
 
             // Verify
             Assert.That(response == fakeCourseId);
-            mockLearnerWebService.Verify(f => f.FindCourseId(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebService.Verify(f => f.FindCourseId(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebService.VerifyNoOtherCalls();
             mockLogService.Verify(f => f.LogMessage(It.IsAny<string>(), It.IsAny<EventType>()), Times.Once);
             mockLogService.VerifyNoOtherCalls();
@@ -443,22 +444,22 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            VendorRecord fakeVendorRecord = fixture.Generate<VendorRecord>();
             string fakeCourseId = fixture.Generate<string>();
-            mockLearnerWebService.Setup(f => f.FindCourseId(fakeCitiRecord)).Throws(new UnknownCourseException("test"));
+            mockLearnerWebService.Setup(f => f.FindCourseId(fakeVendorRecord)).Throws(new UnknownCourseException("test"));
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            string response = citiService.FindCourse(fakeCitiRecord);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            string response = vendorService.FindCourse(fakeVendorRecord);
 
             // Verify
             Assert.That(response == null);
-            mockLearnerWebService.Verify(f => f.FindCourseId(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebService.Verify(f => f.FindCourseId(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebService.VerifyNoOtherCalls();
             mockLogService.Verify(f => f.LogMessage(It.IsAny<string>(), It.IsAny<EventType>()), Times.Once);
             mockLogService.Verify(f => f.GetCacheAndFlush(), Times.Once);
             mockLogService.VerifyNoOtherCalls();
-            mockReportingService.Verify(f => f.ReportUnknownCourse(It.IsAny<CitiRecord>(), It.IsAny<List<string>>()), Times.Once);
+            mockReportingService.Verify(f => f.ReportUnknownCourse(It.IsAny<VendorRecord>(), It.IsAny<List<string>>()), Times.Once);
             mockReportingService.Verify(f => f.ReportSystemError(It.IsAny<SystemError>(), It.IsAny<List<string>>()), Times.Never);
             mockReportingService.VerifyNoOtherCalls();
         }
@@ -468,22 +469,22 @@ namespace CitiDownloaderTests.services
         {
             // Setup
             SetupMocks();
-            CitiRecord fakeCitiRecord = fixture.Generate<CitiRecord>();
+            VendorRecord fakeVendorRecord = fixture.Generate<VendorRecord>();
             string fakeCourseId = fixture.Generate<string>();
-            mockLearnerWebService.Setup(f => f.FindCourseId(fakeCitiRecord)).Throws(new Exception());
+            mockLearnerWebService.Setup(f => f.FindCourseId(fakeVendorRecord)).Throws(new Exception());
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            string response = citiService.FindCourse(fakeCitiRecord);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            string response = vendorService.FindCourse(fakeVendorRecord);
 
             // Verify
             Assert.That(response == null);
-            mockLearnerWebService.Verify(f => f.FindCourseId(It.IsAny<CitiRecord>()), Times.Once);
+            mockLearnerWebService.Verify(f => f.FindCourseId(It.IsAny<VendorRecord>()), Times.Once);
             mockLearnerWebService.VerifyNoOtherCalls();
             mockLogService.Verify(f => f.LogMessage(It.IsAny<string>(), It.IsAny<EventType>()), Times.Once);
             mockLogService.Verify(f => f.GetCacheAndFlush(), Times.Once);
             mockLogService.VerifyNoOtherCalls();
-            mockReportingService.Verify(f => f.ReportUnknownCourse(It.IsAny<CitiRecord>(), It.IsAny<List<string>>()), Times.Never);
+            mockReportingService.Verify(f => f.ReportUnknownCourse(It.IsAny<VendorRecord>(), It.IsAny<List<string>>()), Times.Never);
             mockReportingService.Verify(f => f.ReportSystemError(It.IsAny<SystemError>(), It.IsAny<List<string>>()), Times.Once);
             mockReportingService.VerifyNoOtherCalls();
         }
@@ -499,8 +500,8 @@ namespace CitiDownloaderTests.services
             mockSftpClient.Setup(f => f.Upload(fakeFilePath)).Verifiable();
 
             // Execute
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            citiService.UploadHistoryRecords(fakeHistories);
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            vendorService.UploadHistoryRecords(fakeHistories);
 
             // Verify
             mockCsvClient.Verify(f => f.WriteHistoryRecordsToFile(It.IsAny<List<History>>()), Times.Once);
@@ -520,8 +521,8 @@ namespace CitiDownloaderTests.services
             mockCsvClient.Setup(f => f.WriteHistoryRecordsToFile(fakeHistories)).Throws(new Exception());
 
             // Execute & Verify
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            Assert.Throws<Exception>(delegate { citiService.UploadHistoryRecords(fakeHistories); });
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            Assert.Throws<Exception>(delegate { vendorService.UploadHistoryRecords(fakeHistories); });
 
             // Verify
             mockCsvClient.Verify(f => f.WriteHistoryRecordsToFile(It.IsAny<List<History>>()), Times.Once);
@@ -541,8 +542,8 @@ namespace CitiDownloaderTests.services
             mockSftpClient.Setup(f => f.Upload(fakeFilePath)).Throws(new Exception()).Verifiable();
 
             // Execute & Verify
-            ICitiService citiService = new CitiService(mockCitiDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
-            Assert.Throws<Exception>(delegate { citiService.UploadHistoryRecords(fakeHistories); });
+            IVendorService vendorService = new VendorService(mockVendorDownloadService.Object, mockCsvClient.Object, mockLearnerWebService.Object, mockLogService.Object, mockReportingService.Object, mockSftpClient.Object);
+            Assert.Throws<Exception>(delegate { vendorService.UploadHistoryRecords(fakeHistories); });
 
             // Verify
             mockCsvClient.Verify(f => f.WriteHistoryRecordsToFile(It.IsAny<List<History>>()), Times.Once);

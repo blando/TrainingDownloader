@@ -16,10 +16,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\citi-downloader\CitiDownloader.csproj" />
+    <ProjectReference Include="..\citi-downloader\TrainingDownloader.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="test-settings-vendorException.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="test-settings-aalas.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="test-settings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

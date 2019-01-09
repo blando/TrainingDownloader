@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace CitiDownloader.models.entities
+namespace TrainingDownloader.models.entities
 {
     public partial class LWEBIAStateContext : DbContext
     {
@@ -17,9 +17,9 @@ namespace CitiDownloader.models.entities
 
         public virtual DbSet<Courses> Courses { get; set; }
         public virtual DbSet<History> History { get; set; }
-        public virtual DbSet<IsuCitiLwCourses> IsuCitiLwCourses { get; set; }
+        public virtual DbSet<IsuVendorCourses> IsuCitiLwCourses { get; set; }
         public virtual DbSet<IsuCitiLwLearners> IsuCitiLwLearners { get; set; }
-        public virtual DbSet<IsuCitiLwTlHistory> IsuCitiLwTlHistory { get; set; }
+        public virtual DbSet<IsuAalasLwLearners> IsuAalasLwLearners { get; set; }
         public virtual DbSet<IsuImportHistory> IsuImportHistory { get; set; }
         public virtual DbSet<Learners> Learners { get; set; }
 
@@ -378,22 +378,22 @@ namespace CitiDownloader.models.entities
                     .HasMaxLength(64);
             });
 
-            modelBuilder.Entity<IsuCitiLwCourses>(entity =>
+            modelBuilder.Entity<IsuVendorCourses>(entity =>
             {
                 entity.ToTable("ISU_Citi_LW_Courses");
 
                 entity.Property(e => e.Id).HasColumnName("ID");
 
-                entity.Property(e => e.CitiCourseGroup)
+                entity.Property(e => e.VendorCourseGroup)
                     .HasColumnName("CITI_CourseGroup")
                     .HasMaxLength(255);
 
-                entity.Property(e => e.CitiCourseId)
+                entity.Property(e => e.VendorCourseId)
                     .IsRequired()
                     .HasColumnName("CITI_CourseId")
                     .HasMaxLength(64);
 
-                entity.Property(e => e.CitiCourseName)
+                entity.Property(e => e.VendorCourseName)
                     .HasColumnName("CITI_CourseName")
                     .HasMaxLength(255);
 
@@ -451,38 +451,44 @@ namespace CitiDownloader.models.entities
                     .HasMaxLength(10);
             });
 
-            modelBuilder.Entity<IsuCitiLwTlHistory>(entity =>
+            modelBuilder.Entity<IsuAalasLwLearners>(entity =>
             {
-                entity.HasKey(e => e.LwCurriculaId);
+                entity.HasKey(e => e.AalasLearnerId);
 
-                entity.ToTable("ISU_Citi_LW_TL_History");
+                entity.ToTable("ISU_AALAS_LW_Learners");
 
-                entity.Property(e => e.LwCurriculaId)
-                    .HasColumnName("LW_Curricula_Id")
+                entity.HasIndex(e => e.LwLearnerId)
+                    .HasName("ISU_Index_LW_LearnerID");
+
+                entity.Property(e => e.AalasLearnerId)
+                    .HasColumnName("aalas_LearnerId")
+                    .HasMaxLength(10)
                     .ValueGeneratedNever();
 
-                entity.Property(e => e.CitiHistoryId)
-                    .HasColumnName("CITI_History_Id")
+                entity.Property(e => e.AalasLastName)
+                    .HasColumnName("aalas_LastName")
                     .HasMaxLength(50);
 
-                entity.Property(e => e.DateInserted)
-                    .HasColumnName("dateInserted")
-                    .HasColumnType("datetime");
+                entity.Property(e => e.DateCreated).HasColumnType("datetime");
 
-                entity.Property(e => e.TlHistoryId)
-                    .HasColumnName("TL_History_Id")
-                    .HasMaxLength(50);
+                entity.Property(e => e.DateUpdated).HasColumnType("datetime");
+
+                entity.Property(e => e.LwLearnerId)
+                    .HasColumnName("LW_LearnerId")
+                    .HasMaxLength(10);
             });
 
             modelBuilder.Entity<IsuImportHistory>(entity =>
             {
                 entity.ToTable("ISU_Import_History");
 
-                entity.Property(e => e.CitiCourseId)
+                entity.Property(e => e.VendorCourseId)
+                    .HasColumnName("CitiCourseId")
                     .IsRequired()
                     .HasMaxLength(50);
 
-                entity.Property(e => e.CitiId)
+                entity.Property(e => e.VendorUserId)
+                    .HasColumnName("CitiId")
                     .IsRequired()
                     .HasMaxLength(20);
 

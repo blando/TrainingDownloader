@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics;
 using ISULogger;
-using static CitiDownloader.services.LogService;
+using static TrainingDownloader.services.LogService;
 
-namespace CitiDownloader.services
+namespace TrainingDownloader.services
 {
     public interface ILogService
     {

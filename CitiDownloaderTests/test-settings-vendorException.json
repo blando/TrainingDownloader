@@ -19,7 +19,7 @@
     "MailSenderAddress": "Sender <sender@iastate.edu>",
     "EventLogName": "Test-EventLog",
     "LinuxTextLogName": "/var/log/test.log",
-    "VendorApplication": "CITI",
+    "VendorApplication": "throwException",
     "FieldMaps": {
       "VendorUserId": 0,
       "FirstName": 1,
@@ -27,14 +27,14 @@
       "EmailAddress": 3,
       "RegistrationDate": 4,
       "VendorCourseName": 5,
-      "StageNumber": 7,
-      "StageDescription": 8,
-      "CompletionReportNum": 9,
-      "CompletionDate": 10,
-      "Score": 11,
-      "PassingScore": 12,
-      "ExpirationDate": 13,
-      "VendorCourseId": 14
+      "StageNumber": -1,
+      "StageDescription": -1,
+      "CompletionReportNum": -1,
+      "CompletionDate": 12,
+      "Score": 8,
+      "PassingScore": 9,
+      "ExpirationDate": -1,
+      "VendorCourseId": 15
     }
   }
 }

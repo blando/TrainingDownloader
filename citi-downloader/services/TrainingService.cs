@@ -1,28 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using CitiDownloader.exceptions;
-using CitiDownloader.models;
-using CitiDownloader.models.entities;
-using CitiDownloader.wrappers;
-using static CitiDownloader.services.LogService;
-using CitiDownloader.configurations;
+using TrainingDownloader.exceptions;
+using TrainingDownloader.models;
+using TrainingDownloader.models.entities;
+using TrainingDownloader.wrappers;
+using static TrainingDownloader.services.LogService;
+using TrainingDownloader.configurations;
 using System.Linq;
 
-namespace CitiDownloader.services
+namespace TrainingDownloader.services
 {
     public class TrainingService : ITrainingService
     {
-        private ICitiService citiService {get; set;}
+        private IVendorService vendorService {get; set;}
         private ILearnerWebServices learnerWebServices { get; set; }
         private ILogService logService { get; set; }
         private IReportingService reportingService { get; set; }
         private IMailService mailService { get; set; }
         private ApplicationConfiguration appConfig { get; set; }
 
-        public TrainingService(ICitiService citiService, ILearnerWebServices learnerWebServices, ILogService logService, IReportingService reportingService, ApplicationConfiguration appConfig, IMailService mailService)
+        public TrainingService(IVendorService vendorService, ILearnerWebServices learnerWebServices, ILogService logService, IReportingService reportingService, ApplicationConfiguration appConfig, IMailService mailService)
         {
-            this.citiService = citiService;
+            this.vendorService = vendorService;
             this.learnerWebServices = learnerWebServices;
             this.logService = logService;
             this.reportingService = reportingService;
@@ -34,28 +34,28 @@ namespace CitiDownloader.services
         {
             logService.LogMessage("Starting Training Downloader", EventType.Information);
 
-            List<CitiRecord> citiRecords = citiService.GetRecords();
-            if (citiRecords == null || citiRecords.Count == 0)
+            List<VendorRecord> vRecords = vendorService.GetRecords();
+            if (vRecords == null || vRecords.Count == 0)
             {
-                logService.LogMessage("No CitiRecords were returned", EventType.Warning);
-                if (citiRecords == null)
+                logService.LogMessage("No Records were returned", EventType.Warning);
+                if (vRecords == null)
                 {
-                    citiRecords = new List<CitiRecord>();
+                    vRecords = new List<VendorRecord>();
                 }
             }
             else
             {
-                logService.LogMessage(string.Format("Retrieved {0} records", citiRecords.Count), EventType.Information);
+                logService.LogMessage(string.Format("Retrieved {0} records", vRecords.Count), EventType.Information);
             }
 
             List<History> histories = new List<History>();
-            foreach (CitiRecord citiRecord in citiRecords)
+            foreach (VendorRecord vRecord in vRecords)
             {
                 logService.FlushCache();
-                logService.LogMessage(string.Format("Processing record for {0}", citiRecord.CitiId), EventType.Debug);
+                logService.LogMessage(string.Format("Processing record for {0}", vRecord.VendorUserId), EventType.Debug);
 
                 // If the Import History record failed to import we'll stop processing this record
-                IsuImportHistory isuImportHistory = citiService.InsertImportHistory(citiRecord);
+                IsuImportHistory isuImportHistory = vendorService.InsertImportHistory(vRecord);
                 if (isuImportHistory.Id == 0)
                 {
                     continue;
@@ -63,13 +63,19 @@ namespace CitiDownloader.services
 
                 logService.LogMessage("Inserted import history record", EventType.Debug);
 
+                if (!vRecord.IsComplete)
+                {
+                    logService.LogMessage("Training record is not complete", EventType.Debug);
+                    continue;
+                }
+
                 // Get History record
-                History history = learnerWebServices.GetHistoryByCurriculaId(citiRecord);
+                History history = learnerWebServices.GetHistoryByCurriculaId(vRecord);
                 if (history != null)
                 {
                     logService.LogMessage("Found existing history record", EventType.Debug);
 
-                    if (appConfig.processType == ApplicationConfiguration.ProcessType.Upload)
+                    if (appConfig.processType == CommandLineConfiguration.ProcessType.Upload)
                     {
                         histories.Add(history);
                     }
@@ -78,9 +84,9 @@ namespace CitiDownloader.services
                 }
 
                 // If record is verified we'll go to the next record
-                if (citiService.IsRecordVerified(citiRecord, out history))
+                if (vendorService.IsRecordVerified(vRecord, out history))
                 {
-                    if (appConfig.processType == ApplicationConfiguration.ProcessType.Upload)
+                    if (appConfig.processType == CommandLineConfiguration.ProcessType.Upload && history != null)
                     {
                         histories.Add(history);
                     }
@@ -89,21 +95,21 @@ namespace CitiDownloader.services
                 }
 
                 // Find the user
-                citiRecord.UnivId = citiService.FindUser(citiRecord);
-                if (citiRecord.UnivId == null)
+                vRecord.UnivId = vendorService.FindUser(vRecord);
+                if (vRecord.UnivId == null)
                 {
                     continue;
                 }
 
                 // Find the course
-                citiRecord.CourseId = citiService.FindCourse(citiRecord);
-                if (citiRecord.CourseId == null)
+                vRecord.LearnerWebCourseId = vendorService.FindCourse(vRecord);
+                if (vRecord.LearnerWebCourseId == null)
                 {
                     continue;
                 }
 
                 // Use user and course to find if this records exists
-                history = learnerWebServices.GetHistoryByCitiIdCourseIdDate(citiRecord);
+                history = learnerWebServices.GetHistoryByVendorIdCourseIdDate(vRecord);
 
                 // Else we need to create a new record
                 if (history == null)
@@ -111,21 +117,21 @@ namespace CitiDownloader.services
                     // Add the History record to the list of records to be returned
                     try
                     {
-                        history = learnerWebServices.CreateHistoryRecord(citiRecord);
+                        history = learnerWebServices.CreateHistoryRecord(vRecord);
                         histories.Add(history);
-                        citiService.InsertSingleHistoryRecord(history);
+                        vendorService.InsertSingleHistoryRecord(history);
                         learnerWebServices.SetInsertedForImportRecord(Convert.ToInt32(isuImportHistory.Id));
                     }
                     catch (Exception exception)
                     {
                         string message = string.Format("An unknown error occurred while creating History record: {0}", exception.Message);
                         logService.LogMessage(message, EventType.Error);
-                        reportingService.ReportSystemError(new SystemError { attachedObject = citiRecord, objectType = typeof(CitiRecord), message = message }, logService.GetCacheAndFlush());
+                        reportingService.ReportSystemError(new SystemError { attachedObject = vRecord, objectType = typeof(VendorRecord), message = message }, logService.GetCacheAndFlush());
                     }
                 }
                 else
                 {
-                    if (appConfig.processType == ApplicationConfiguration.ProcessType.Upload)
+                    if (appConfig.processType == CommandLineConfiguration.ProcessType.Upload)
                     {
                         histories.Add(history);
                     }
@@ -134,9 +140,9 @@ namespace CitiDownloader.services
 
             if (histories.Any())
             {
-                if (appConfig.processType == ApplicationConfiguration.ProcessType.Upload)
+                if (appConfig.processType == CommandLineConfiguration.ProcessType.Upload)
                 {
-                    citiService.UploadHistoryRecords(histories);
+                    vendorService.UploadHistoryRecords(histories);
                 }
             }
 

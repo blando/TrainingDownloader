@@ -1,46 +1,46 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using CitiDownloader.exceptions;
-using CitiDownloader.models;
-using CitiDownloader.models.entities;
-using CitiDownloader.wrappers;
-using static CitiDownloader.services.LogService;
+using TrainingDownloader.exceptions;
+using TrainingDownloader.models;
+using TrainingDownloader.models.entities;
+using TrainingDownloader.wrappers;
+using static TrainingDownloader.services.LogService;
 
-namespace CitiDownloader.services
+namespace TrainingDownloader.services
 {
-    public class CitiService : ICitiService
+    public class VendorService : IVendorService
     {
-        private ICitiDownloadService citiDownloadService;
-        private ICsvClient csvWrapper;
+        private IVendorDownloadService vendorDownloadService;
+        private ICsvClient csvClient;
         private ILearnerWebServices learnerWebServices;
         private ILogService logService;
         private IReportingService reportingService;
         private ISftpClient sftpClient;
 
-        public CitiService(ICitiDownloadService citiDownloadService, ICsvClient csvWrapper, ILearnerWebServices learnerWebServices, ILogService logService, IReportingService reportingService, ISftpClient sftpClient)
+        public VendorService(IVendorDownloadService vendorDownloadService, ICsvClient csvClient, ILearnerWebServices learnerWebServices, ILogService logService, IReportingService reportingService, ISftpClient sftpClient)
         {
-            this.citiDownloadService = citiDownloadService;
-            this.csvWrapper = csvWrapper;
+            this.vendorDownloadService = vendorDownloadService;
+            this.csvClient = csvClient;
             this.learnerWebServices = learnerWebServices;
             this.logService = logService;
             this.reportingService = reportingService;
             this.sftpClient = sftpClient;
         }
 
-        public List<CitiRecord> GetRecords()
+        public List<VendorRecord> GetRecords()
         {
-            logService.LogMessage("Getting CITI data", EventType.Information);
+            logService.LogMessage("Getting Vendor data", EventType.Information);
             try
             {
-                string file = citiDownloadService.DownloadFile();
-                return csvWrapper.GetCitiRecords(file);
+                string file = vendorDownloadService.DownloadFile();
+                return csvClient.GetVendorRecords(file);
             }
             catch (Exception exception)
             {
                 string message = string.Format("An unknown error occurred retrieving records: {0}", exception.Message);
                 logService.LogMessage(message, EventType.Error);
-                reportingService.ReportSystemError(new SystemError { attachedObject = null, objectType = typeof(CitiRecord), message = message }, logService.GetCacheAndFlush());
+                reportingService.ReportSystemError(new SystemError { attachedObject = null, objectType = typeof(VendorRecord), message = message }, logService.GetCacheAndFlush());
                 return null;
             }
         }
@@ -57,12 +57,12 @@ namespace CitiDownloader.services
         }
 
 
-        public string FindUser(CitiRecord citiRecord)
+        public string FindUser(VendorRecord vRecord)
         {
             try
             {
-                string univId = learnerWebServices.FindUser(citiRecord);
-                logService.LogMessage(string.Format("Found user with id {0}", citiRecord.UnivId), EventType.Debug);
+                string univId = learnerWebServices.FindUser(vRecord);
+                logService.LogMessage(string.Format("Found user with id {0}", vRecord.UnivId), EventType.Debug);
                 return univId;
             }
             catch (InvalidUserException)
@@ -72,45 +72,45 @@ namespace CitiDownloader.services
             }
             catch (UnknownUserException)
             {
-                logService.LogMessage(string.Format("Unknown user with CitiId {0}", citiRecord.CitiId), EventType.Warning);
-                reportingService.ReportUnknownUser(citiRecord, logService.GetCacheAndFlush());
+                logService.LogMessage(string.Format("Unknown user with Vendor Id {0}", vRecord.VendorUserId), EventType.Warning);
+                reportingService.ReportUnknownUser(vRecord, logService.GetCacheAndFlush());
                 return null;
             }
             catch (Exception exception)
             {
                 string message = string.Format("An unknown error occurred while retrieving User Id: {0}", exception.Message);
                 logService.LogMessage(message, EventType.Error);
-                reportingService.ReportSystemError(new SystemError { attachedObject = citiRecord, objectType = typeof(CitiRecord), message = message }, logService.GetCacheAndFlush());
+                reportingService.ReportSystemError(new SystemError { attachedObject = vRecord, objectType = typeof(VendorRecord), message = message }, logService.GetCacheAndFlush());
                 return null;
             }
         }
 
-        public IsuImportHistory InsertImportHistory(CitiRecord citiRecord)
+        public IsuImportHistory InsertImportHistory(VendorRecord vRecord)
         {
             try
             {
-                IsuImportHistory isuImportHistory = learnerWebServices.InsertImportHistory(citiRecord);
+                IsuImportHistory isuImportHistory = learnerWebServices.InsertImportHistory(vRecord);
                 return isuImportHistory;
             }
             catch (Exception exception)
             {
                 string message = string.Format("An unknown error occurred while inserting Import History: {0}", exception.Message);
                 logService.LogMessage(message, EventType.Error);
-                reportingService.ReportSystemError(new SystemError { attachedObject = citiRecord, objectType = typeof(CitiRecord), message = message }, logService.GetCacheAndFlush());
+                reportingService.ReportSystemError(new SystemError { attachedObject = vRecord, objectType = typeof(VendorRecord), message = message }, logService.GetCacheAndFlush());
                 return null;
             }
         }
 
-        public bool IsRecordVerified(CitiRecord citiRecord, out History history)
+        public bool IsRecordVerified(VendorRecord vRecord, out History history)
         {
             history = null;
             try
             {
                 // If this record is already verified we'll go on to the next
-                if (learnerWebServices.IsVerified(citiRecord))
+                if (learnerWebServices.IsVerified(vRecord))
                 {
                     logService.LogMessage("Record is verified", EventType.Debug);
-                    history = learnerWebServices.GetHistoryByCurriculaId(citiRecord);
+                    history = learnerWebServices.GetHistoryByCurriculaId(vRecord);
                     return true;
                 }
                 return false;
@@ -119,38 +119,39 @@ namespace CitiDownloader.services
             {
                 string message = string.Format("An unknown error occurred while retrieving History record: {0}", exception.Message);
                 logService.LogMessage(message, EventType.Error);
-                reportingService.ReportSystemError(new SystemError { attachedObject = citiRecord, objectType = typeof(CitiRecord), message = message }, logService.GetCacheAndFlush());
+                reportingService.ReportSystemError(new SystemError { attachedObject = vRecord, objectType = typeof(VendorRecord), message = message }, logService.GetCacheAndFlush());
                 return false;
             }
         }
 
-        public string FindCourse(CitiRecord citiRecord)
+        public string FindCourse(VendorRecord vRecord)
         {
             try
             {
-                string courseId = learnerWebServices.FindCourseId(citiRecord);
-                logService.LogMessage(string.Format("Found course id {0}", citiRecord.CourseId), EventType.Debug);
+                string courseId = learnerWebServices.FindCourseId(vRecord);
+                logService.LogMessage(string.Format("Found course id {0}", vRecord.LearnerWebCourseId), EventType.Debug);
                 return courseId;
             }
             catch (UnknownCourseException)
             {
-                logService.LogMessage(string.Format("Unknown course {0}: {1}", citiRecord.CitiCourseId, citiRecord.Group), EventType.Warning);
-                reportingService.ReportUnknownCourse(citiRecord, logService.GetCacheAndFlush());
+                logService.LogMessage(string.Format("Unknown course {0}: {1}", vRecord.VendorCourseId, vRecord.VendorCourseName), EventType.Warning);
+                reportingService.ReportUnknownCourse(vRecord, logService.GetCacheAndFlush());
                 return null;
             }
             catch (Exception exception)
             {
                 string message = string.Format("An unknown error occurred while retrieving course Id: {0}", exception.Message);
                 logService.LogMessage(message, EventType.Error);
-                reportingService.ReportSystemError(new SystemError { attachedObject = citiRecord, objectType = typeof(CitiRecord), message = message }, logService.GetCacheAndFlush());
+                reportingService.ReportSystemError(new SystemError { attachedObject = vRecord, objectType = typeof(VendorRecord), message = message }, logService.GetCacheAndFlush());
                 return null;
             }
         }
 
         public void UploadHistoryRecords(List<History> historyRecords)
         {
-            string filePath = csvWrapper.WriteHistoryRecordsToFile(historyRecords);
+            string filePath = csvClient.WriteHistoryRecordsToFile(historyRecords);
             sftpClient.Upload(filePath);
         }
+
     }
 }

@@ -1,18 +1,18 @@
-﻿using CitiDownloader.wrappers;
+﻿using TrainingDownloader.wrappers;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using CitiDownloader.configurations;
+using TrainingDownloader.configurations;
 
-namespace CitiDownloader.services
+namespace TrainingDownloader.services
 {
-    public class CitiDownloadService : ICitiDownloadService
+    public class VendorDownloadService : IVendorDownloadService
     {
         private ApplicationConfiguration config { get; set; }
         private IWebClientWrapper webClientWrapper { get; set; }
 
-        public CitiDownloadService(ApplicationConfiguration configuration, IWebClientWrapper webClientWrapper)
+        public VendorDownloadService(ApplicationConfiguration configuration, IWebClientWrapper webClientWrapper)
         {
             this.config = configuration;
             this.webClientWrapper = webClientWrapper;

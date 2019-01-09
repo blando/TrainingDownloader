@@ -1,11 +1,11 @@
-﻿using CitiDownloader.exceptions;
+﻿using TrainingDownloader.exceptions;
 using System;
 using System.Collections.Generic;
 using System.Net.Mail;
 using System.Text;
 using System.Threading;
 
-namespace CitiDownloader.wrappers
+namespace TrainingDownloader.wrappers
 {
     public class MailClient : IMailClient
     {

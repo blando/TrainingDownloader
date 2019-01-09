@@ -1,30 +1,29 @@
 ﻿using System.Collections.Generic;
-using CitiDownloader.wrappers;
-using CitiDownloader.services;
+using TrainingDownloader.wrappers;
+using TrainingDownloader.services;
 using Moq;
 using NUnit.Framework;
 using SimpleFixture;
-using CitiDownloader.models;
-using CitiDownloader.exceptions;
-using CitiDownloader.configurations;
+using TrainingDownloader.models;
+using TrainingDownloader.exceptions;
+using TrainingDownloader.configurations;
 
-namespace CitiDownloaderTests.services
+namespace TrainingDownloaderTests.services
 {
     [TestFixture]
     public class MailServiceTests
     {
-        private Mock<IReportingService> mockReportingService;
-        private Mock<IMailClient> mockMailWrapper;
-        private Mock<ApplicationConfiguration> mockApplicationConfiguration;
-        private Fixture fixture = new Fixture();
-        private string appConfigTestFile = "test-settings.json";
+        private Mock<IReportingService> mockReportingService { get; set; }
+        private Mock<IMailClient> mockMailWrapper { get; set; }
+        private ApplicationConfiguration applicationConfiguration { get; set; }
+        private Fixture fixture { get; set; }
 
         private void SetupMocks()
         {
+            fixture = new Fixture();
             mockReportingService = new Mock<IReportingService>();
             mockMailWrapper = new Mock<IMailClient>();
-            object[] args = new object[] { new string[] { "full", "upload", appConfigTestFile } };
-            mockApplicationConfiguration = new Mock<ApplicationConfiguration>(MockBehavior.Loose, args);
+            applicationConfiguration = new ApplicationConfiguration();
         }
 
         [Test]
@@ -37,7 +36,7 @@ namespace CitiDownloaderTests.services
             
             foreach (ReportMessage rp in courseReportMessages)
             {
-                rp.attachedObject = fixture.Generate<CitiRecord>();
+                rp.attachedObject = fixture.Generate<VendorRecord>();
             }
             mockReportingService.Setup(f => f.GetUnknownCourses()).Returns(courseReportMessages).Verifiable();
             mockReportingService.Setup(f => f.GetUnknownUsers()).Returns(new List<ReportMessage>()).Verifiable();
@@ -48,17 +47,17 @@ namespace CitiDownloaderTests.services
             string mailFrom = fixture.Generate<string>();
             string sysMailTo = fixture.Generate<string>();
             string sysMailSubject = fixture.Generate<string>();
-            mockApplicationConfiguration.SetupGet(p => p.AdminMailToAddress).Returns(mailTo);
-            mockApplicationConfiguration.SetupGet(p => p.AdminMailSubject).Returns(mailSubject);
-            mockApplicationConfiguration.SetupGet(p => p.MailSenderAddress).Returns(mailFrom);
-            mockApplicationConfiguration.SetupGet(p => p.SysAdminMailSubject).Returns(sysMailSubject);
-            mockApplicationConfiguration.SetupGet(p => p.SysAdminMailToAddress).Returns(sysMailTo);
+            applicationConfiguration.AdminMailToAddress = mailTo;
+            applicationConfiguration.AdminMailSubject = mailSubject;
+            applicationConfiguration.MailSenderAddress = mailFrom;
+            applicationConfiguration.SysAdminMailSubject = sysMailSubject;
+            applicationConfiguration.SysAdminMailToAddress = sysMailTo;
 
             mockMailWrapper.Setup(f => f.SendEmail(mailTo, mailFrom, mailSubject, It.IsAny<string>())).Verifiable();
             
 
             // Execute
-            IMailService mailService = new MailService(mockReportingService.Object, mockMailWrapper.Object, mockApplicationConfiguration.Object);
+            IMailService mailService = new MailService(mockReportingService.Object, mockMailWrapper.Object, applicationConfiguration);
             mailService.SendMessages();
 
             // Verify
@@ -81,7 +80,7 @@ namespace CitiDownloaderTests.services
 
             foreach (ReportMessage rp in userReportMessages)
             {
-                rp.attachedObject = fixture.Generate<CitiRecord>();
+                rp.attachedObject = fixture.Generate<VendorRecord>();
             }
             mockReportingService.Setup(f => f.GetUnknownCourses()).Returns(new List<ReportMessage>()).Verifiable();
             mockReportingService.Setup(f => f.GetUnknownUsers()).Returns(userReportMessages).Verifiable();
@@ -92,17 +91,17 @@ namespace CitiDownloaderTests.services
             string mailFrom = fixture.Generate<string>();
             string sysMailTo = fixture.Generate<string>();
             string sysMailSubject = fixture.Generate<string>();
-            mockApplicationConfiguration.SetupGet(p => p.AdminMailToAddress).Returns(mailTo);
-            mockApplicationConfiguration.SetupGet(p => p.AdminMailSubject).Returns(mailSubject);
-            mockApplicationConfiguration.SetupGet(p => p.MailSenderAddress).Returns(mailFrom);
-            mockApplicationConfiguration.SetupGet(p => p.SysAdminMailSubject).Returns(sysMailSubject);
-            mockApplicationConfiguration.SetupGet(p => p.SysAdminMailToAddress).Returns(sysMailTo);
+            applicationConfiguration.AdminMailToAddress = mailTo;
+            applicationConfiguration.AdminMailSubject = mailSubject;
+            applicationConfiguration.MailSenderAddress = mailFrom;
+            applicationConfiguration.SysAdminMailSubject = sysMailSubject;
+            applicationConfiguration.SysAdminMailToAddress = sysMailTo;
 
             mockMailWrapper.Setup(f => f.SendEmail(mailTo, mailFrom, mailSubject, It.IsAny<string>())).Verifiable();
 
 
             // Execute
-            IMailService mailService = new MailService(mockReportingService.Object, mockMailWrapper.Object, mockApplicationConfiguration.Object);
+            IMailService mailService = new MailService(mockReportingService.Object, mockMailWrapper.Object, applicationConfiguration);
             mailService.SendMessages();
 
             // Verify
@@ -136,16 +135,16 @@ namespace CitiDownloaderTests.services
             string mailFrom = fixture.Generate<string>();
             string sysMailTo = fixture.Generate<string>();
             string sysMailSubject = fixture.Generate<string>();
-            mockApplicationConfiguration.SetupGet(p => p.AdminMailToAddress).Returns(mailTo);
-            mockApplicationConfiguration.SetupGet(p => p.AdminMailSubject).Returns(mailSubject);
-            mockApplicationConfiguration.SetupGet(p => p.MailSenderAddress).Returns(mailFrom);
-            mockApplicationConfiguration.SetupGet(p => p.SysAdminMailSubject).Returns(sysMailSubject);
-            mockApplicationConfiguration.SetupGet(p => p.SysAdminMailToAddress).Returns(sysMailTo);
+            applicationConfiguration.AdminMailToAddress = mailTo;
+            applicationConfiguration.AdminMailSubject = mailSubject;
+            applicationConfiguration.MailSenderAddress = mailFrom;
+            applicationConfiguration.SysAdminMailSubject = sysMailSubject;
+            applicationConfiguration.SysAdminMailToAddress = sysMailTo;
 
             mockMailWrapper.Setup(f => f.SendEmail(sysMailTo, mailFrom, sysMailSubject, It.IsAny<string>())).Verifiable();
 
             // Execute
-            IMailService mailService = new MailService(mockReportingService.Object, mockMailWrapper.Object, mockApplicationConfiguration.Object);
+            IMailService mailService = new MailService(mockReportingService.Object, mockMailWrapper.Object,applicationConfiguration);
             mailService.SendMessages();
 
             // Verify
@@ -173,13 +172,13 @@ namespace CitiDownloaderTests.services
             List<ReportMessage> userReportMessages = fixture.Generate<List<ReportMessage>>();
             foreach(ReportMessage rp in userReportMessages)
             {
-                rp.attachedObject = fixture.Generate<CitiRecord>();
+                rp.attachedObject = fixture.Generate<VendorRecord>();
             }
 
             List<ReportMessage> courseReportMessages = fixture.Generate<List<ReportMessage>>();
             foreach(ReportMessage rp in courseReportMessages)
             {
-                rp.attachedObject = fixture.Generate<CitiRecord>();
+                rp.attachedObject = fixture.Generate<VendorRecord>();
             }
 
             mockReportingService.Setup(f => f.GetUnknownCourses()).Returns(courseReportMessages).Verifiable();
@@ -191,17 +190,17 @@ namespace CitiDownloaderTests.services
             string mailFrom = fixture.Generate<string>();
             string sysMailTo = fixture.Generate<string>();
             string sysMailSubject = fixture.Generate<string>();
-            mockApplicationConfiguration.SetupGet(p => p.AdminMailToAddress).Returns(mailTo);
-            mockApplicationConfiguration.SetupGet(p => p.AdminMailSubject).Returns(mailSubject);
-            mockApplicationConfiguration.SetupGet(p => p.MailSenderAddress).Returns(mailFrom);
-            mockApplicationConfiguration.SetupGet(p => p.SysAdminMailSubject).Returns(sysMailSubject);
-            mockApplicationConfiguration.SetupGet(p => p.SysAdminMailToAddress).Returns(sysMailTo);
+            applicationConfiguration.AdminMailToAddress = mailTo;
+            applicationConfiguration.AdminMailSubject = mailSubject;
+            applicationConfiguration.MailSenderAddress = mailFrom;
+            applicationConfiguration.SysAdminMailSubject = sysMailSubject;
+            applicationConfiguration.SysAdminMailToAddress = sysMailTo;
 
             mockMailWrapper.Setup(f => f.SendEmail(sysMailTo, mailFrom, sysMailSubject, It.IsAny<string>())).Verifiable();
             mockMailWrapper.Setup(f => f.SendEmail(mailTo, mailFrom, mailSubject, It.IsAny<string>())).Verifiable();
 
             // Execute
-            IMailService mailService = new MailService(mockReportingService.Object, mockMailWrapper.Object, mockApplicationConfiguration.Object);
+            IMailService mailService = new MailService(mockReportingService.Object, mockMailWrapper.Object, applicationConfiguration);
             mailService.SendMessages();
 
             // Verify
@@ -226,14 +225,14 @@ namespace CitiDownloaderTests.services
             string mailFrom = fixture.Generate<string>();
             string sysMailTo = fixture.Generate<string>();
             string sysMailSubject = fixture.Generate<string>();
-            mockApplicationConfiguration.SetupGet(p => p.AdminMailToAddress).Returns(mailTo);
-            mockApplicationConfiguration.SetupGet(p => p.AdminMailSubject).Returns(mailSubject);
-            mockApplicationConfiguration.SetupGet(p => p.MailSenderAddress).Returns(mailFrom);
-            mockApplicationConfiguration.SetupGet(p => p.SysAdminMailSubject).Returns(sysMailSubject);
-            mockApplicationConfiguration.SetupGet(p => p.SysAdminMailToAddress).Returns(sysMailTo);
+            applicationConfiguration.AdminMailToAddress = mailTo;
+            applicationConfiguration.AdminMailSubject = mailSubject;
+            applicationConfiguration.MailSenderAddress = mailFrom;
+            applicationConfiguration.SysAdminMailSubject = sysMailSubject;
+            applicationConfiguration.SysAdminMailToAddress = sysMailTo;
 
             // Execute
-            IMailService mailService = new MailService(mockReportingService.Object, mockMailWrapper.Object, mockApplicationConfiguration.Object);
+            IMailService mailService = new MailService(mockReportingService.Object, mockMailWrapper.Object, applicationConfiguration);
             mailService.SendMessages();
 
             // Verify
@@ -253,7 +252,7 @@ namespace CitiDownloaderTests.services
 
             foreach (ReportMessage rp in courseReportMessages)
             {
-                rp.attachedObject = fixture.Generate<CitiRecord>();
+                rp.attachedObject = fixture.Generate<VendorRecord>();
             }
             mockReportingService.Setup(f => f.GetUnknownCourses()).Returns(courseReportMessages).Verifiable();
             mockReportingService.Setup(f => f.GetUnknownUsers()).Returns(new List<ReportMessage>()).Verifiable();
@@ -263,17 +262,17 @@ namespace CitiDownloaderTests.services
             string mailFrom = fixture.Generate<string>();
             string sysMailTo = fixture.Generate<string>();
             string sysMailSubject = fixture.Generate<string>();
-            mockApplicationConfiguration.SetupGet(p => p.AdminMailToAddress).Returns(mailTo);
-            mockApplicationConfiguration.SetupGet(p => p.AdminMailSubject).Returns(mailSubject);
-            mockApplicationConfiguration.SetupGet(p => p.MailSenderAddress).Returns(mailFrom);
-            mockApplicationConfiguration.SetupGet(p => p.SysAdminMailSubject).Returns(sysMailSubject);
-            mockApplicationConfiguration.SetupGet(p => p.SysAdminMailToAddress).Returns(sysMailTo);
+            applicationConfiguration.AdminMailToAddress = mailTo;
+            applicationConfiguration.AdminMailSubject = mailSubject;
+            applicationConfiguration.MailSenderAddress = mailFrom;
+            applicationConfiguration.SysAdminMailSubject = sysMailSubject;
+            applicationConfiguration.SysAdminMailToAddress = sysMailTo;
 
             mockMailWrapper.Setup(f => f.SendEmail(mailTo, mailFrom, mailSubject, It.IsAny<string>())).Throws(new SendMailException("Unable to send email"));
 
 
             // Execute
-            IMailService mailService = new MailService(mockReportingService.Object, mockMailWrapper.Object, mockApplicationConfiguration.Object);
+            IMailService mailService = new MailService(mockReportingService.Object, mockMailWrapper.Object, applicationConfiguration);
 
             // Execute & Verify
             Assert.Throws<SendMailException>(delegate { mailService.SendMessages(); });

@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace CitiDownloader.wrappers
+namespace TrainingDownloader.wrappers
 {
     public class WebClientWrapper : IWebClientWrapper
     {

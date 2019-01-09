@@ -1,9 +1,9 @@
-﻿using CitiDownloader.models.entities;
+﻿using TrainingDownloader.models.entities;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CitiDownloader.models.entities
+namespace TrainingDownloader.models.entities
 {
     public partial class History
     {

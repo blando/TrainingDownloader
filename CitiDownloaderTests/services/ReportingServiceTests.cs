@@ -2,21 +2,21 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
-using CitiDownloader.wrappers;
-using CitiDownloader.services;
+using TrainingDownloader.wrappers;
+using TrainingDownloader.services;
 using NUnit.Framework.Constraints;
 using Moq;
 using NUnit.Framework;
 using SimpleFixture;
-using CitiDownloader.models;
+using TrainingDownloader.models;
 using System.Net;
-using CitiDownloader.repositories;
-using CitiDownloader.models.entities;
-using CitiDownloader.exceptions;
+using TrainingDownloader.repositories;
+using TrainingDownloader.models.entities;
+using TrainingDownloader.exceptions;
 using System.Diagnostics;
-using static CitiDownloader.services.LogService;
+using static TrainingDownloader.services.LogService;
 
-namespace CitiDownloaderTests.services
+namespace TrainingDownloaderTests.services
 {
     [TestFixture]
     public class ReportingServiceTests
@@ -55,7 +55,7 @@ namespace CitiDownloaderTests.services
             IReportingService reportingService = new ReportingService();
             for (int i = 0; i < itemsCount; i++)
             {
-                reportingService.ReportUnknownCourse(fixture.Generate<CitiRecord>(), fixture.Generate<List<string>>());
+                reportingService.ReportUnknownCourse(fixture.Generate<VendorRecord>(), fixture.Generate<List<string>>());
             }
 
             // Verify
@@ -76,7 +76,7 @@ namespace CitiDownloaderTests.services
             IReportingService reportingService = new ReportingService();
             for (int i = 0; i < itemsCount; i++)
             {
-                reportingService.ReportUnknownUser(fixture.Generate<CitiRecord>(), fixture.Generate<List<string>>());
+                reportingService.ReportUnknownUser(fixture.Generate<VendorRecord>(), fixture.Generate<List<string>>());
             }
 
             // Verify

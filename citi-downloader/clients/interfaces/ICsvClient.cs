@@ -1,14 +1,14 @@
-﻿using CitiDownloader.models;
-using CitiDownloader.models.entities;
+﻿using TrainingDownloader.models;
+using TrainingDownloader.models.entities;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CitiDownloader.wrappers
+namespace TrainingDownloader.wrappers
 {
     public interface ICsvClient
     {
-        List<CitiRecord> GetCitiRecords(string file);
+        List<VendorRecord> GetVendorRecords(string file);
         string WriteHistoryRecordsToFile(List<History> histories);
     }
 }

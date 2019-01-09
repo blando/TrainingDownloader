@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CitiDownloader.wrappers
+namespace TrainingDownloader.wrappers
 {
     public interface IWebClientWrapper
     {

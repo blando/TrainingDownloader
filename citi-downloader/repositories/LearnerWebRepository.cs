@@ -1,30 +1,44 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using CitiDownloader.models.entities;
+using TrainingDownloader.models.entities;
 using System.Linq;
+using TrainingDownloader.configurations;
+using TrainingDownloader.exceptions;
+using TrainingDownloader.models;
 
-namespace CitiDownloader.repositories
+namespace TrainingDownloader.repositories
 {
     public class LearnerWebRepository : ILearnerWebRepository
     {
         private LWEBIAStateContext db;
+        private ApplicationConfiguration config { get; set; }
 
         // Tables to cache
         private List<IsuImportHistory> isuImportHistories;
-        private List<IsuCitiLwLearners> isuCitiLwLearners;
+        private List<VendorUser> vendorUsers;
 
-        public LearnerWebRepository(LWEBIAStateContext db)
+        public LearnerWebRepository(LWEBIAStateContext db, ApplicationConfiguration config)
         {
             this.db = db;
+            this.config = config;
             this.isuImportHistories = db.IsuImportHistory.ToList();
-            this.isuCitiLwLearners = db.IsuCitiLwLearners.ToList();
+
+            switch(config.applicationType)
+            {
+                case CommandLineConfiguration.ApplicationType.Citi:
+                    this.vendorUsers = db.IsuCitiLwLearners.ToList<VendorUser>();
+                    break;
+                case CommandLineConfiguration.ApplicationType.Aalas:
+                    this.vendorUsers = db.IsuAalasLwLearners.ToList<VendorUser>();
+                    break;
+            }
         }
 
         public IsuImportHistory InsertAppTrainingRecordHistory(IsuImportHistory isuImportHistory)
         {
-            IsuImportHistory existingIsuImportHistory = isuImportHistories.Where(h => h.CitiId == isuImportHistory.CitiId
-                && h.CitiCourseId == isuImportHistory.CitiCourseId
+            IsuImportHistory existingIsuImportHistory = isuImportHistories.Where(h => h.VendorUserId == isuImportHistory.VendorUserId
+                && h.VendorCourseId == isuImportHistory.VendorCourseId
                 && h.CompletionDate == isuImportHistory.CompletionDate).FirstOrDefault();
             if (existingIsuImportHistory == null)
             {
@@ -36,17 +50,17 @@ namespace CitiDownloader.repositories
             return existingIsuImportHistory;
         }
 
-        public void UpdateCitiIdToLearner(Learners learner)
+        public void UpdateVendorIdToLearner(Learners learner)
         {
             db.Learners.Update(learner);
             db.SaveChanges();
         }
 
-        public int InsertCourse(IsuCitiLwCourses isuCitiLwCourse)
+        public int InsertCourse(IsuVendorCourses isuVendorCourse)
         {
-            db.IsuCitiLwCourses.Add(isuCitiLwCourse);
+            db.IsuCitiLwCourses.Add(isuVendorCourse);
             db.SaveChanges();
-            return isuCitiLwCourse.Id;
+            return isuVendorCourse.Id;
         }
 
         public int InsertTrainingRecord(History history)
@@ -79,9 +93,9 @@ namespace CitiDownloader.repositories
             return db.History.Find(curriculaId);
         }
 
-        public IsuCitiLwLearners GetIsuCitiLwLearner(string CitiId)
+        public VendorUser GetVendorUser(string id)
         {
-            return isuCitiLwLearners.Where(l => l.CitiLearnerId == CitiId).SingleOrDefault();
+            return vendorUsers.Where(l => l.GetVendorLearnerId() == id).SingleOrDefault();
         }
 
         public Learners GetLearnerByEmail(string Email)
@@ -94,37 +108,70 @@ namespace CitiDownloader.repositories
             return db.Learners.Where(l => l.UserId == NetId).FirstOrDefault();
         }
 
-        public Learners GetLearnerByCitiId(string CitiId)
+        public Learners GetLearnerByVendorId(string VendorUserId)
         {
-            return db.Learners.Where(l => l.User4 == CitiId).FirstOrDefault();
-        }
-
-        public Courses GetCourseByCitiCourseId(string CitiCourseId)
-        {
-            return db.Courses.Where(c => c.User2 == CitiCourseId).FirstOrDefault();
-        }
-
-        public IsuImportHistory GetImportHistory(string CitiId, string CitiCourseId, DateTime CompletedDate)
-        {
-            return isuImportHistories.Where(h => h.CitiId == CitiId && h.CitiCourseId == CitiCourseId && h.CompletionDate == CompletedDate).FirstOrDefault();
-        }
-
-        public void UpdateOrInsertISUCitiLwLearner(IsuCitiLwLearners isuCitiLwLearner)
-        {
-            IsuCitiLwLearners isuCitiLwLearnerCache = db.IsuCitiLwLearners.Find(isuCitiLwLearner.CitiLearnerId);
-            if (isuCitiLwLearnerCache != null)
-            {        
-                isuCitiLwLearnerCache.LwLearnerId = isuCitiLwLearner.LwLearnerId;
-                isuCitiLwLearnerCache.Valid = isuCitiLwLearner.Valid;
-                isuCitiLwLearnerCache.DateUpdated = DateTime.Now;
-                db.IsuCitiLwLearners.Update(isuCitiLwLearnerCache);
+            if (config.applicationType == CommandLineConfiguration.ApplicationType.Citi)
+            {
+                return db.Learners.Where(l => l.User4 == VendorUserId).FirstOrDefault();
             }
             else
             {
-                db.IsuCitiLwLearners.Add(isuCitiLwLearner);
+                return db.Learners.Where(l => l.User6 == VendorUserId).FirstOrDefault();
             }
-            db.SaveChanges();
-            isuCitiLwLearners.Add(isuCitiLwLearner);
+
+        }
+
+        public Courses GetCourseByVendorCourseId(string VendorCourseId)
+        {
+            return db.Courses.Where(c => c.User2 == VendorCourseId).FirstOrDefault();
+        }
+
+        public IsuImportHistory GetImportHistory(string VendorUserId, string VendorCourseId, DateTime CompletedDate)
+        {
+            return isuImportHistories.Where(h => h.VendorUserId == VendorUserId && h.VendorCourseId == VendorCourseId && h.CompletionDate == CompletedDate).FirstOrDefault();
+        }
+
+        public void UpdateOrInsertVendorUser(VendorUser vendorUser)
+        {
+            if (config.applicationType == CommandLineConfiguration.ApplicationType.Citi)
+            {
+                IsuCitiLwLearners isuCitiLwLearner = (IsuCitiLwLearners)vendorUser;
+
+                IsuCitiLwLearners isuCitiLwLearnerCache = db.IsuCitiLwLearners.Find(isuCitiLwLearner.CitiLearnerId);
+                if (isuCitiLwLearnerCache != null)
+                {
+                    isuCitiLwLearnerCache.LwLearnerId = isuCitiLwLearner.LwLearnerId;
+                    isuCitiLwLearnerCache.Valid = isuCitiLwLearner.Valid;
+                    isuCitiLwLearnerCache.DateUpdated = DateTime.Now;
+                    db.IsuCitiLwLearners.Update(isuCitiLwLearnerCache);
+                }
+                else
+                {
+                    db.IsuCitiLwLearners.Add(isuCitiLwLearner);
+                }
+                db.SaveChanges();
+                vendorUsers.Add(isuCitiLwLearner);
+            }
+            else if (config.applicationType == CommandLineConfiguration.ApplicationType.Aalas)
+            {
+                IsuAalasLwLearners isuAalasLwLearner = (IsuAalasLwLearners)vendorUser;
+
+                IsuAalasLwLearners isuAalasLwLearnerCache = db.IsuAalasLwLearners.Find(isuAalasLwLearner.AalasLearnerId);
+                if (isuAalasLwLearnerCache != null)
+                {
+                    isuAalasLwLearnerCache.LwLearnerId = isuAalasLwLearner.LwLearnerId;
+                    isuAalasLwLearnerCache.Valid = isuAalasLwLearner.Valid;
+                    isuAalasLwLearnerCache.DateUpdated = DateTime.Now;
+                    db.IsuAalasLwLearners.Update(isuAalasLwLearnerCache);
+                }
+                else
+                {
+                    db.IsuAalasLwLearners.Add(isuAalasLwLearner);
+                }
+                db.SaveChanges();
+                vendorUsers.Add(isuAalasLwLearner);
+            }
+            
         }
 
         public History GetHistoryRecordByLearnerCourseDate(string univId, string courseId, DateTime CompletedDate)

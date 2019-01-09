@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CitiDownloader.models.entities
+namespace TrainingDownloader.models.entities
 {
-    public partial class IsuCitiLwCourses
+    public partial class IsuVendorCourses
     {
         public int Id { get; set; }
         public string LwCourseId { get; set; }
-        public string CitiCourseId { get; set; }
+        public string VendorCourseId { get; set; }
         public string TlCourseId { get; set; }
-        public string CitiCourseName { get; set; }
-        public string CitiCourseGroup { get; set; }
+        public string VendorCourseName { get; set; }
+        public string VendorCourseGroup { get; set; }
         public string TlCourseIdParallel { get; set; }
         public DateTime DateCreated { get; set; }
         public DateTime DateUpdated { get; set; }

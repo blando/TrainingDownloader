@@ -1,14 +1,14 @@
-﻿using CitiDownloader.models;
-using CitiDownloader.wrappers;
+﻿using TrainingDownloader.models;
+using TrainingDownloader.wrappers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Linq;
-using CitiDownloader.configurations;
+using TrainingDownloader.configurations;
 
-namespace CitiDownloader.services
+namespace TrainingDownloader.services
 {
     public class LogService : ILogService
     {

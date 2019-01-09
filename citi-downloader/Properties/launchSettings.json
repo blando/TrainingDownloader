@@ -2,7 +2,7 @@
   "profiles": {
     "CitiDownloader": {
       "commandName": "Project",
-      "commandLineArgs": "delta upload verbose settings.json"
+      "commandLineArgs": "full upload verbose settings-citi.json"
     }
   }
 }
